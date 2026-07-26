@@ -351,7 +351,6 @@ function printOrder(order: Order) {
   printWindow.document.close();
 }
 useEffect(() => {
-  useEffect(() => {
   const unsubscribe =
     subscribeShopSettings((settings) => {
       setShopStatus(settings.status);
@@ -360,50 +359,60 @@ useEffect(() => {
 
   return () => unsubscribe();
 }, []);
-    const unsubscribe = onSnapshot(
-      
-      ordersQuery,
-      (snapshot) => {
-        const orderList: Order[] = snapshot.docs.map((document) => ({
+
+useEffect(() => {
+  const unsubscribe = onSnapshot(
+    ordersQuery,
+    (snapshot) => {
+      const orderList: Order[] = snapshot.docs.map(
+        (document) => ({
           id: document.id,
           ...(document.data() as Omit<Order, "id">),
-        }));
-const currentOrderIds = new Set(
-  orderList.map((order) => order.id)
-);
+        })
+      );
 
-if (isFirstLoad.current) {
-  previousOrderIds.current = currentOrderIds;
-  isFirstLoad.current = false;
-} else {
-  const newOrders = orderList.filter(
-    (order) => !previousOrderIds.current.has(order.id)
+      const currentOrderIds = new Set(
+        orderList.map((order) => order.id)
+      );
+
+      if (isFirstLoad.current) {
+        previousOrderIds.current = currentOrderIds;
+        isFirstLoad.current = false;
+      } else {
+        const newOrders = orderList.filter(
+          (order) =>
+            !previousOrderIds.current.has(order.id)
+        );
+
+        if (newOrders.length > 0) {
+          playNotificationSound();
+        }
+
+        previousOrderIds.current = currentOrderIds;
+      }
+
+      setOrders(orderList);
+      setIsLoading(false);
+    },
+    (error) => {
+      console.error(
+        "อ่านออเดอร์ไม่สำเร็จ:",
+        error
+      );
+
+      setIsLoading(false);
+    }
   );
 
-  if (newOrders.length > 0) {
-    playNotificationSound();
-  }
-
-  previousOrderIds.current = currentOrderIds;
-}
-        setOrders(orderList);
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error("อ่านออเดอร์ไม่สำเร็จ:", error);
-        setIsLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
-useEffect(() => {
+  return () => unsubscribe();
+}, []);
+  useEffect(() => {
   const timer = setInterval(() => {
     forceUpdate((value) => value + 1);
   }, 60000);
 
   return () => clearInterval(timer);
-}, []);
+}, []);  
   return (
     <main
   style={{
