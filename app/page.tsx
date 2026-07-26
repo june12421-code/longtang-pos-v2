@@ -29,6 +29,23 @@ const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 const [customerName, setCustomerName] = useState("");
 const [customerPhone, setCustomerPhone] = useState("");
 const [customerLine, setCustomerLine] = useState("");
+useEffect(() => {
+  const savedName = localStorage.getItem("lt_customer_name");
+  const savedPhone = localStorage.getItem("lt_customer_phone");
+  const savedLine = localStorage.getItem("lt_customer_line");
+
+  if (savedName) {
+    setCustomerName(savedName);
+  }
+
+  if (savedPhone) {
+    setCustomerPhone(savedPhone);
+  }
+
+  if (savedLine) {
+    setCustomerLine(savedLine);
+  }
+}, []);
 const [customerAddress, setCustomerAddress] = useState("");
 const [customerNote, setCustomerNote] = useState("");
 const [orderType, setOrderType] = useState("");
@@ -39,6 +56,7 @@ const [sauces, setSauces] = useState({
   sesame: 0,
   suki: 0,
 });
+const [showWelcome, setShowWelcome] = useState(true);
 useEffect(() => {
   async function loadMenus() {
     try {
@@ -180,7 +198,93 @@ const filteredMenus = menus.filter((menu) => {
 
   return matchCategory && matchSearch;
 });
+ if (showWelcome) {
   return (
+    <main
+      style={{
+        minHeight: "100vh",
+        background:
+          "linear-gradient(180deg,#111111,#1d1d1d)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "24px",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "420px",
+          textAlign: "center",
+          color: "white",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "80px",
+            marginBottom: "20px",
+          }}
+        >
+          🍲
+        </div>
+
+        <h1
+          style={{
+            color: "#ff6600",
+            fontSize: "40px",
+            marginBottom: "10px",
+          }}
+        >
+          หลงทั่ง
+        </h1>
+
+        <p
+          style={{
+            color: "#dddddd",
+            fontSize: "18px",
+            lineHeight: 1.8,
+            marginBottom: "35px",
+          }}
+        >
+          ชาบูเสียบไม้
+          <br />
+          หม่าล่าทอด
+          <br />
+          หม่าล่าผัดแห้ง
+        </p>
+
+        <button
+          onClick={() => setShowWelcome(false)}
+          style={{
+            width: "100%",
+            padding: "18px",
+            background: "#ff6600",
+            color: "white",
+            border: "none",
+            borderRadius: "14px",
+            fontSize: "22px",
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
+          🍜 เริ่มสั่งอาหาร
+        </button>
+
+        <p
+          style={{
+            marginTop: "20px",
+            color: "#999999",
+            fontSize: "14px",
+          }}
+        >
+          สแกน QR แล้วกดปุ่มเพื่อเริ่มสั่งอาหาร
+        </p>
+      </div>
+    </main>
+  );
+}
+
+return ( 
     <main
       style={{
         minHeight: "100vh",
@@ -448,27 +552,40 @@ if (totalPrice < minimumPrice) {
   );
   return;
 }
-    const orderId = await createOrder({
-      customerName,
-      customerPhone,
-      customerLine,
-      customerAddress,
-      customerNote,
-      orderType,
-selectedSoup,
-selectedSpicy,
-paymentMethod,
-sauces,      
-malaSauceCount: sauceReward.malaSauce,
-selectableSauceCount: sauceReward.selectableSauce,
-      items: cart,
-      totalPrice,
-    });
+ const orderResult = await createOrder({
+  customerName,
+  customerPhone,
+  customerLine,
+  customerAddress,
+  customerNote,
+  orderType,
+  selectedSoup,
+  selectedSpicy,
+  paymentMethod,
+  sauces,
+  malaSauceCount: sauceReward.malaSauce,
+  selectableSauceCount: sauceReward.selectableSauce,
+  items: cart,
+  totalPrice,
+});
 
-    alert(
-      `รับคำสั่งซื้อแล้ว\nเลขออเดอร์: ${orderId}\nยอดรวม: ${totalPrice} บาท`
-    );
+alert(
+  `รับคำสั่งซื้อแล้ว\nเลขคิว: ${orderResult.queueNumber}\nยอดรวม: ${totalPrice} บาท`
+);   
+localStorage.setItem(
+  "lt_customer_name",
+  customerName
+);
 
+localStorage.setItem(
+  "lt_customer_phone",
+  customerPhone
+);
+
+localStorage.setItem(
+  "lt_customer_line",
+  customerLine
+);
     setCart([]);
     setIsCheckoutOpen(false);
     setCustomerName("");

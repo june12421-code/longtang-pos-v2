@@ -27,6 +27,7 @@ export default function AdminMenuPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
   async function loadMenus() {
     try {
@@ -64,6 +65,7 @@ function resetForm() {
 
   setImageFile(null);
   setEditingId(null);
+  setShowForm(false);
 }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -155,8 +157,9 @@ setMenus(latestMenus);
   }
 );
     setMessage("");
+setShowForm(true);
 
-    window.scrollTo({
+window.scrollTo({
       top: 0,
       behavior: "smooth",
     });
@@ -229,14 +232,47 @@ setMenus(latestMenus);
         </h1>
 
         <p
-          style={{
-            color: "#666",
-            marginBottom: "20px",
-          }}
-        >
-          เพิ่ม แก้ไข เปิด–ปิดขาย หรือลบเมนู
-        </p>
+  style={{
+    color: "#666",
+    marginBottom: "14px",
+  }}
+>
+  เพิ่ม แก้ไข เปิด–ปิดขาย หรือลบเมนู
+</p>
 
+<button
+  type="button"
+  onClick={() => {
+    if (showForm) {
+      resetForm();
+      return;
+    }
+
+    setEditingId(null);
+    setShowForm(true);
+  }}
+  style={{
+    position: "sticky",
+    top: "10px",
+    zIndex: 20,
+    width: "100%",
+    marginBottom: "16px",
+    padding: "14px",
+    border: "none",
+    borderRadius: "12px",
+    backgroundColor: showForm ? "#374151" : "#ff6600",
+    color: "#ffffff",
+    fontSize: "17px",
+    fontWeight: "bold",
+    cursor: "pointer",
+    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.18)",
+  }}
+>
+  {showForm
+    ? "✕ ปิดฟอร์ม"
+    : "＋ เพิ่มเมนูใหม่"}
+</button>
+{showForm && (
         <form
           onSubmit={handleSubmit}
           style={{
@@ -543,8 +579,9 @@ setMenus(latestMenus);
             )}
           </div>
         </form>
+)}
 
-        {message && (
+{message && (
           <div
             style={{
               backgroundColor: "#fff7d6",
@@ -603,27 +640,31 @@ setMenus(latestMenus);
                   }}
                 >
                   <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: "12px",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "12px",
+    marginBottom: "12px",
+    flexWrap: "wrap",
+  }}
+>
+  <div
   style={{
     display: "flex",
     gap: "12px",
     alignItems: "center",
+    flex: 1,
+    minWidth: 0,
   }}
->
+>                  
   {menu.imageUrl ? (
     <img
       src={menu.imageUrl}
       alt={menu.name}
       style={{
-        width: "80px",
-        height: "80px",
+        width: "72px",
+height: "72px",
         objectFit: "cover",
         borderRadius: "12px",
         flexShrink: 0,
@@ -650,12 +691,13 @@ setMenus(latestMenus);
 
   <div>
                       <h3
-                        style={{
-                          fontSize: "19px",
-                          fontWeight: "bold",
-                          marginBottom: "4px",
-                        }}
-                      >
+  style={{
+    fontSize: "19px",
+    fontWeight: "bold",
+    marginBottom: "4px",
+    wordBreak: "break-word",
+  }}
+>
                         {menu.name}
                       </h3>
 
@@ -669,11 +711,12 @@ setMenus(latestMenus);
                       </p>
 
                       <p
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: "bold",
-                        }}
-                      >
+  style={{
+    fontSize: "18px",
+    fontWeight: "bold",
+    wordBreak: "break-word",
+  }}
+>
                         {menu.price} บาท
                       </p>
                       <div
@@ -765,12 +808,13 @@ setMenus(latestMenus);
                   </div>
 
                   <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, 1fr)",
-                      gap: "8px",
-                    }}
-                  >
+  style={{
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(110px,1fr))",
+    gap: "8px",
+  }}
+>
                     <button
                       type="button"
                       onClick={() => handleEdit(menu)}

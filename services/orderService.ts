@@ -38,9 +38,14 @@ paymentMethod: string;
   totalPrice: number;
 };
 
+export type CreateOrderResult = {
+  orderId: string;
+  queueNumber: string;
+};
+
 export async function createOrder(
   orderData: CreateOrderInput
-): Promise<string> {
+): Promise<CreateOrderResult> {
   const today = new Date();
 
   const dateKey = [
@@ -49,8 +54,10 @@ export async function createOrder(
     String(today.getDate()).padStart(2, "0"),
   ].join("-");
 
-  const counterReference = doc(db, "queueCounters", dateKey);
+   const counterReference = doc(db, "queueCounters", dateKey);
   const orderReference = doc(collection(db, "orders"));
+
+  let createdQueueNumber = ""; 
 
   await runTransaction(db, async (transaction) => {
     const counterSnapshot = await transaction.get(counterReference);
@@ -59,8 +66,10 @@ export async function createOrder(
       ? counterSnapshot.data().lastNumber ?? 0
       : 0;
 
-    const nextNumber = lastNumber + 1;
+        const nextNumber = lastNumber + 1;
     const queueNumber = `A${String(nextNumber).padStart(3, "0")}`;
+
+    createdQueueNumber = queueNumber;
 
     transaction.set(counterReference, {
       lastNumber: nextNumber,
@@ -78,7 +87,10 @@ export async function createOrder(
     });
   });
 
-  return orderReference.id;
+    return {
+    orderId: orderReference.id,
+    queueNumber: createdQueueNumber,
+  };
 }
   
 export async function updateOrderStatus(
