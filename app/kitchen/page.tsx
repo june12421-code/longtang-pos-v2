@@ -280,17 +280,37 @@ export default function KitchenPage() {
           >
             {orders.map((order) => (
               <article
-                key={order.id}
-                style={{
-                  background: "#222222",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  border:
-                    order.status === "ready"
-                      ? "3px solid #22c55e"
-                      : "3px solid #ff6600",
-                }}
-              >
+  key={order.id}
+  style={{
+    background:
+      order.status === "new"
+        ? "#3b1717"
+        : order.status === "preparing"
+        ? "#3b2a12"
+        : order.status === "ready"
+        ? "#14351f"
+        : "#222222",
+    borderRadius: "16px",
+    padding: "20px",
+    border:
+      order.status === "new"
+        ? "4px solid #ef4444"
+        : order.status === "preparing"
+        ? "4px solid #f59e0b"
+        : order.status === "ready"
+        ? "4px solid #22c55e"
+        : "4px solid #6b7280",
+    boxShadow:
+      order.status === "new"
+        ? "0 0 18px rgba(239, 68, 68, 0.35)"
+        : order.status === "preparing"
+        ? "0 0 18px rgba(245, 158, 11, 0.30)"
+        : order.status === "ready"
+        ? "0 0 18px rgba(34, 197, 94, 0.30)"
+        : "none",
+    transition: "all 0.25s ease",
+  }}
+>
                 <h2
   style={{
     marginTop: 0,
