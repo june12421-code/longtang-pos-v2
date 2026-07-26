@@ -11,7 +11,10 @@ import MenuCard from "../components/MenuCard";
 import Cart from "../components/Cart";
 import Checkout from "../components/Checkout";
 import { createOrder } from "../services/orderService";
-
+import {
+  ShopStatus,
+  subscribeShopSettings,
+} from "../services/shopSettingsService";
 
 type CartItem = MenuItem & {
   quantity: number;
@@ -57,6 +60,20 @@ const [sauces, setSauces] = useState({
   suki: 0,
 });
 const [showWelcome, setShowWelcome] = useState(true);
+const [shopStatus, setShopStatus] =
+  useState<ShopStatus>("open");
+
+const [shopMessage, setShopMessage] =
+  useState("");
+ useEffect(() => {
+  const unsubscribe =
+    subscribeShopSettings((settings) => {
+      setShopStatus(settings.status);
+      setShopMessage(settings.message);
+    });
+
+  return () => unsubscribe();
+}, []); 
 useEffect(() => {
   async function loadMenus() {
     try {
@@ -198,6 +215,60 @@ const filteredMenus = menus.filter((menu) => {
 
   return matchCategory && matchSearch;
 });
+if (shopStatus !== "open") {
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#111111",
+        color: "white",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "24px",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "420px",
+          width: "100%",
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "80px",
+            marginBottom: "20px",
+          }}
+        >
+          {shopStatus === "closed"
+            ? "🔴"
+            : "🟠"}
+        </div>
+
+        <h1
+          style={{
+            color: "#ff6600",
+          }}
+        >
+          {shopStatus === "closed"
+            ? "ร้านปิด"
+            : "หยุดรับออเดอร์ออนไลน์"}
+        </h1>
+
+        <p
+          style={{
+            marginTop: "18px",
+            lineHeight: 1.8,
+            color: "#dddddd",
+          }}
+        >
+          {shopMessage}
+        </p>
+      </div>
+    </main>
+  );
+}
  if (showWelcome) {
   return (
     <main
