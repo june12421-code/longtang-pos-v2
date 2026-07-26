@@ -490,7 +490,20 @@ onChangeOrderType={(value) => {
   });
 }}
     selectedSoup={selectedSoup}
-onChangeSoup={setSelectedSoup}
+onChangeSoup={(value) => {
+  setSelectedSoup(value);
+
+  const soupsWithoutSpicy = [
+    "ซุปกระดูกนม",
+    "กระดูกนม",
+    "น้ำดำ",
+    "น้ำใส",
+  ];
+
+  if (soupsWithoutSpicy.includes(value)) {
+    setSelectedSpicy("");
+  }
+}}
 selectedSpicy={selectedSpicy}
 onChangeSpicy={setSelectedSpicy}
 paymentMethod={paymentMethod}
@@ -540,7 +553,18 @@ if (!orderType) {
 if (orderType === "shabu" && !selectedSoup) {
   alert("กรุณาเลือกน้ำซุป");
   return;
-}if (!selectedSpicy) {
+}const soupsWithoutSpicy = [
+  "ซุปกระดูกนม",
+  "กระดูกนม",
+  "น้ำดำ",
+  "น้ำใส",
+];
+
+const requiresSpicy =
+  orderType !== "shabu" ||
+  !soupsWithoutSpicy.includes(selectedSoup);
+
+if (requiresSpicy && !selectedSpicy) {
   alert("กรุณาเลือกระดับความเผ็ด");
   return;
 }

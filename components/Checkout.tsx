@@ -80,6 +80,16 @@ onConvertToDry,
   onBack,
   onConfirm,
 }: CheckoutProps) {
+  const soupsWithoutSpicy = [
+  "ซุปกระดูกนม",
+  "กระดูกนม",
+  "น้ำดำ",
+  "น้ำใส",
+];
+
+const shouldSelectSpicy =
+  orderType !== "shabu" ||
+  !soupsWithoutSpicy.includes(selectedSoup);
   return (
     <div
       style={{
@@ -171,25 +181,41 @@ onConvertToDry,
   </label>
 )}
 
-<label style={labelStyle}>
-  ระดับความเผ็ด
+{shouldSelectSpicy ? (
+  <label style={labelStyle}>
+    ระดับความเผ็ด
 
-  <select
-    value={selectedSpicy}
-    onChange={(event) =>
-      onChangeSpicy(event.target.value)
-    }
-    style={inputStyle}
+    <select
+      value={selectedSpicy}
+      onChange={(event) =>
+        onChangeSpicy(event.target.value)
+      }
+      style={inputStyle}
+    >
+      <option value="">กรุณาเลือกระดับความเผ็ด</option>
+
+      {spicyOptions.map((spicy) => (
+        <option key={spicy} value={spicy}>
+          {spicy}
+        </option>
+      ))}
+    </select>
+  </label>
+) : (
+  <div
+    style={{
+      marginBottom: "16px",
+      padding: "12px",
+      borderRadius: "10px",
+      background: "#263238",
+      border: "1px solid #607d8b",
+      color: "#eceff1",
+      fontSize: "15px",
+    }}
   >
-    <option value="">กรุณาเลือกระดับความเผ็ด</option>
-
-    {spicyOptions.map((spicy) => (
-      <option key={spicy} value={spicy}>
-        {spicy}
-      </option>
-    ))}
-  </select>
-</label>
+    ℹ️ น้ำซุปนี้ไม่มีตัวเลือกระดับความเผ็ด
+  </div>
+)}
 <label style={labelStyle}>
   วิธีชำระเงิน
 
