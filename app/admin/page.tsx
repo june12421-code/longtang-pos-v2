@@ -11,6 +11,11 @@ import {
 
 import { db } from "../../lib/firebase";
 import { updateOrderStatus } from "../../services/orderService";
+import {
+  ShopStatus,
+  subscribeShopSettings,
+  updateShopSettings,
+} from "../../services/shopSettingsService";
 type OrderItem = {
   id: number;
   name: string;
@@ -55,7 +60,12 @@ export default function AdminPage() {
 const isFirstLoad = useRef(true);
 const audioContextRef = useRef<AudioContext | null>(null);
 const [soundEnabled, setSoundEnabled] = useState(false);
-  const [searchText, setSearchText] = useState("");
+  const [shopStatus, setShopStatus] =
+  useState<ShopStatus>("open");
+
+const [shopMessage, setShopMessage] =
+  useState("");
+const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const [, forceUpdate] = useState(0);
@@ -341,7 +351,17 @@ function printOrder(order: Order) {
   printWindow.document.close();
 }
 useEffect(() => {
+  useEffect(() => {
+  const unsubscribe =
+    subscribeShopSettings((settings) => {
+      setShopStatus(settings.status);
+      setShopMessage(settings.message);
+    });
+
+  return () => unsubscribe();
+}, []);
     const unsubscribe = onSnapshot(
+      
       ordersQuery,
       (snapshot) => {
         const orderList: Order[] = snapshot.docs.map((document) => ({
@@ -432,6 +452,121 @@ useEffect(() => {
     ? "🔔 เปิดเสียงแล้ว"
     : "🔕 เปิดเสียงแจ้งเตือน"}
 </button>
+<div
+  style={{
+    background: "#1f2937",
+    borderRadius: "14px",
+    padding: "16px",
+    marginBottom: "16px",
+  }}
+>
+  <h3
+    style={{
+      marginTop: 0,
+      marginBottom: "12px",
+    }}
+  >
+    🏪 สถานะร้าน
+  </h3>
+
+  <div
+    style={{
+      display: "flex",
+      gap: "8px",
+      flexWrap: "wrap",
+      marginBottom: "12px",
+    }}
+  >
+    <button
+      type="button"
+      onClick={() =>
+        updateShopSettings({
+          status: "open",
+          message: "",
+        })
+      }
+      style={statusButtonStyle}
+    >
+      🟢 เปิดร้าน
+    </button>
+
+    <button
+      type="button"
+      onClick={() =>
+        updateShopSettings({
+          status: "paused",
+          message:
+            "ขณะนี้ร้านหยุดรับออเดอร์ออนไลน์ชั่วคราว",
+        })
+      }
+      style={statusButtonStyle}
+    >
+      🟠 หยุดรับออนไลน์
+    </button>
+
+    <button
+      type="button"
+      onClick={() =>
+        updateShopSettings({
+          status: "closed",
+          message:
+            "ร้านปิดแล้ว เปิดอีกครั้งเวลา 17:30 น.",
+        })
+      }
+      style={statusButtonStyle}
+    >
+      🔴 ปิดร้าน
+    </button>
+  </div>
+
+  <textarea
+    value={shopMessage}
+    onChange={(event) =>
+      setShopMessage(event.target.value)
+    }
+    placeholder="ข้อความแจ้งลูกค้า"
+    rows={2}
+    style={{
+      width: "100%",
+      borderRadius: "10px",
+      padding: "10px",
+      boxSizing: "border-box",
+    }}
+  />
+
+  <button
+    type="button"
+    onClick={() =>
+      updateShopSettings({
+        status: shopStatus,
+        message: shopMessage,
+      })
+    }
+    style={{
+      ...statusButtonStyle,
+      marginTop: "10px",
+    }}
+  >
+    💾 บันทึกข้อความ
+  </button>
+
+  <div
+    style={{
+      marginTop: "12px",
+      fontWeight: "bold",
+    }}
+  >
+    สถานะปัจจุบัน :
+
+    {" "}
+
+    {shopStatus === "open"
+      ? "🟢 เปิด"
+      : shopStatus === "paused"
+      ? "🟠 หยุดรับออนไลน์"
+      : "🔴 ปิดร้าน"}
+  </div>
+</div>
   <input
     type="text"
     placeholder="🔍 ค้นหาชื่อ เบอร์ หรือ LINE"
