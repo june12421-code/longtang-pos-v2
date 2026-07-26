@@ -122,7 +122,29 @@ const thaiSupportSales = todayOrders
       order.paymentMethod === "thai-support"
   )
   .reduce((sum, order) => sum + order.totalPrice, 0);
-async function enableNotificationSound() {
+async function handleUpdateShopSettings(
+  status: ShopStatus,
+  message: string
+) {
+  try {
+    await updateShopSettings({
+      status,
+      message,
+    });
+
+    alert("บันทึกสถานะร้านสำเร็จ");
+  } catch (error) {
+    console.error(
+      "บันทึกสถานะร้านไม่สำเร็จ:",
+      error
+    );
+
+    alert(
+      "บันทึกสถานะร้านไม่สำเร็จ กรุณาดู Error ใน Console"
+    );
+  }
+}
+  async function enableNotificationSound() {
   const audioContext = new AudioContext();
 
   await audioContext.resume();
@@ -516,12 +538,11 @@ useEffect(() => {
     <button
       type="button"
       onClick={() =>
-        updateShopSettings({
-          status: "closed",
-          message:
-            "ร้านปิดแล้ว เปิดอีกครั้งเวลา 17:30 น.",
-        })
-      }
+  handleUpdateShopSettings(
+    "closed",
+    "ร้านปิดแล้ว เปิดอีกครั้งเวลา 17:30 น."
+  )
+}
       style={statusButtonStyle}
     >
       🔴 ปิดร้าน
