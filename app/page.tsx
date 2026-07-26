@@ -337,9 +337,44 @@ const filteredMenus = menus.filter((menu) => {
     customerAddress={customerAddress}
     customerNote={customerNote}
     totalPrice={totalPrice}
-    incompatibleItems={incompatibleItems.map(item => item.name)}
+  incompatibleItems={incompatibleItems.map(
+  (item) => item.name
+)}
 hasIncompatibleItems={hasIncompatibleItems}
-    orderType={orderType}
+
+onRemoveIncompatibleItems={() => {
+  const incompatibleItemIds = new Set(
+    incompatibleItems.map((item) => item.id)
+  );
+
+  setCart((currentCart) =>
+    currentCart.filter(
+      (item) => !incompatibleItemIds.has(item.id)
+    )
+  );
+}}
+
+onConvertToShabu={() => {
+  setOrderType("shabu");
+  setSelectedSoup("");
+
+  setSauces({
+    sesame: 0,
+    suki: 0,
+  });
+}}
+
+onConvertToDry={() => {
+  setOrderType("dry");
+  setSelectedSoup("");
+
+  setSauces({
+    sesame: 0,
+    suki: 0,
+  });
+}}
+
+orderType={orderType}  
 onChangeOrderType={(value) => {
   setOrderType(value);
 

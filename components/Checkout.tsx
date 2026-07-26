@@ -35,6 +35,10 @@ onChangeSauces: (
   incompatibleItems: string[];
 hasIncompatibleItems: boolean;
 
+onRemoveIncompatibleItems: () => void;
+onConvertToShabu: () => void;
+onConvertToDry: () => void;
+
   onChangeName: (value: string) => void;
   onChangePhone: (value: string) => void;
   onChangeLine: (value: string) => void;
@@ -65,6 +69,9 @@ onChangeSauces,
   totalPrice,
   incompatibleItems,
 hasIncompatibleItems,
+onRemoveIncompatibleItems,
+onConvertToShabu,
+onConvertToDry,
   onChangeName,
   onChangePhone,
   onChangeLine,
@@ -277,13 +284,22 @@ hasIncompatibleItems,
         marginBottom: "10px",
       }}
     >
-      ⚠️ เมนูที่เลือกไม่สามารถทำตามประเภทอาหารนี้ได้
+      ⚠️ พบเมนูที่ไม่รองรับประเภทอาหารนี้
+    </div>
+
+    <div
+      style={{
+        marginBottom: "8px",
+      }}
+    >
+      เมนูที่ต้องแก้ไข:
     </div>
 
     <ul
       style={{
-        margin: 0,
-        paddingLeft: "20px",
+        marginTop: 0,
+        marginBottom: "16px",
+        paddingLeft: "22px",
       }}
     >
       {incompatibleItems.map((item) => (
@@ -293,11 +309,90 @@ hasIncompatibleItems,
 
     <div
       style={{
-        marginTop: "12px",
-        fontSize: "14px",
+        fontWeight: "bold",
+        marginBottom: "10px",
       }}
     >
-      กรุณาเปลี่ยนประเภทอาหาร หรือกลับไปแก้ไขตะกร้าสินค้า
+      เลือกวิธีแก้ไขออเดอร์
+    </div>
+
+    <div
+      style={{
+        display: "grid",
+        gap: "10px",
+      }}
+    >
+      <button
+        type="button"
+        onClick={onRemoveIncompatibleItems}
+        style={{
+          width: "100%",
+          background: "#dc2626",
+          color: "white",
+          border: "none",
+          borderRadius: "10px",
+          padding: "12px",
+          fontSize: "16px",
+          fontWeight: "bold",
+          cursor: "pointer",
+        }}
+      >
+        🗑️ ลบเมนูที่ทำไม่ได้ออกจากตะกร้า
+      </button>
+
+      <button
+        type="button"
+        onClick={onConvertToShabu}
+        style={{
+          width: "100%",
+          background: "#ea580c",
+          color: "white",
+          border: "none",
+          borderRadius: "10px",
+          padding: "12px",
+          fontSize: "16px",
+          fontWeight: "bold",
+          cursor: "pointer",
+        }}
+      >
+        🍲 เปลี่ยนเป็นชาบูหม่าล่า
+      </button>
+
+      <button
+        type="button"
+        onClick={onConvertToDry}
+        style={{
+          width: "100%",
+          background: "#d97706",
+          color: "white",
+          border: "none",
+          borderRadius: "10px",
+          padding: "12px",
+          fontSize: "16px",
+          fontWeight: "bold",
+          cursor: "pointer",
+        }}
+      >
+        🥢 เปลี่ยนเป็นหม่าล่าผัดแห้ง
+      </button>
+
+      <button
+        type="button"
+        onClick={onBack}
+        style={{
+          width: "100%",
+          background: "#374151",
+          color: "white",
+          border: "1px solid #6b7280",
+          borderRadius: "10px",
+          padding: "12px",
+          fontSize: "16px",
+          fontWeight: "bold",
+          cursor: "pointer",
+        }}
+      >
+        ↩️ กลับไปเปลี่ยนสินค้าเอง
+      </button>
     </div>
   </div>
 )}
