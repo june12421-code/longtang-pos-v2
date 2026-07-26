@@ -291,9 +291,17 @@ export default function KitchenPage() {
                       : "3px solid #ff6600",
                 }}
               >
-                <h2 style={{ marginTop: 0 }}>
-                  ออเดอร์ {order.id.slice(-6)}
-                </h2>
+                <h2
+  style={{
+    marginTop: 0,
+    fontSize: "34px",
+    color: "#ffcc00",
+    textAlign: "center",
+  }}
+>
+  🅰️ คิว {("queueNumber" in order && (order as { queueNumber?: string }).queueNumber) || "-"}
+</h2>
+                
 
                 <p>ลูกค้า: {order.customerName}</p>
 
