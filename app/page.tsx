@@ -60,6 +60,11 @@ const [sauces, setSauces] = useState({
   suki: 0,
 });
 const [showWelcome, setShowWelcome] = useState(true);
+const [orderSuccess, setOrderSuccess] = useState<{
+  queueNumber: string;
+  totalPrice: number;
+  createdAt: string;
+} | null>(null);
 const [shopStatus, setShopStatus] =
   useState<ShopStatus>("open");
 
@@ -664,9 +669,14 @@ if (totalPrice < minimumPrice) {
   totalPrice,
 });
 
-alert(
-  `รับคำสั่งซื้อแล้ว\nเลขคิว: ${orderResult.queueNumber}\nยอดรวม: ${totalPrice} บาท`
-);   
+ setOrderSuccess({
+  queueNumber: orderResult.queueNumber,
+  totalPrice,
+  createdAt: new Date().toLocaleTimeString("th-TH", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }),
+});
 localStorage.setItem(
   "lt_customer_name",
   customerName
@@ -702,6 +712,123 @@ setSauces({
   }
 }}
   />
+)}
+{orderSuccess && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.75)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 9999,
+      padding: "20px",
+    }}
+  >
+    <div
+      style={{
+        width: "100%",
+        maxWidth: "430px",
+        background: "#222222",
+        borderRadius: "24px",
+        padding: "30px 24px",
+        textAlign: "center",
+        border: "3px solid #ff6600",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "70px",
+          marginBottom: "10px",
+        }}
+      >
+        ✅
+      </div>
+
+      <h2
+        style={{
+          color: "#ff6600",
+          fontSize: "34px",
+          margin: 0,
+        }}
+      >
+        รับคำสั่งซื้อแล้ว!
+      </h2>
+
+      <p
+        style={{
+          color: "#dddddd",
+          marginTop: "14px",
+          fontSize: "18px",
+        }}
+      >
+        หมายเลขคิวของคุณ
+      </p>
+
+      <div
+        style={{
+          fontSize: "54px",
+          fontWeight: "bold",
+          color: "#ffffff",
+          marginBottom: "18px",
+        }}
+      >
+        {orderSuccess.queueNumber}
+      </div>
+
+      <div
+        style={{
+          background: "#333333",
+          borderRadius: "14px",
+          padding: "14px",
+          marginBottom: "18px",
+        }}
+      >
+        <div style={{ marginBottom: "8px" }}>
+          💰 ยอดรวม {orderSuccess.totalPrice} บาท
+        </div>
+
+        <div>
+          🕒 เวลา {orderSuccess.createdAt}
+        </div>
+      </div>
+
+      <div
+        style={{
+          background: "#fff4cc",
+          color: "#8a5200",
+          border: "2px solid #ffcc66",
+          borderRadius: "14px",
+          padding: "16px",
+          lineHeight: 1.7,
+          fontWeight: "bold",
+          marginBottom: "24px",
+        }}
+      >
+        ⚠️ กรุณาแจ้งหมายเลขคิว
+        <br />
+        เพื่อแจ้งยืนยันออเดอร์ทาง LINE อีกครั้ง
+      </div>
+
+      <button
+        onClick={() => setOrderSuccess(null)}
+        style={{
+          width: "100%",
+          padding: "18px",
+          background: "#ff6600",
+          color: "white",
+          border: "none",
+          borderRadius: "14px",
+          fontSize: "22px",
+          fontWeight: "bold",
+          cursor: "pointer",
+        }}
+      >
+        ตกลง
+      </button>
+    </div>
+  </div>
 )}
     </main>
   );
