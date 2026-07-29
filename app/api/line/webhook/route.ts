@@ -20,6 +20,12 @@ export const dynamic = "force-dynamic";
 const LINE_PROFILE_URL =
   "https://api.line.me/v2/bot/profile";
 
+const LINE_REPLY_URL =
+  "https://api.line.me/v2/bot/message/reply";
+
+const ORDER_URL =
+  "https://longtang-pos-v2.vercel.app";
+
 const CONVERSATIONS_COLLECTION =
   "lineConversations";
 
@@ -49,15 +55,19 @@ interface LineWebhookEvent {
   mode?: "active" | "standby";
   timestamp?: number;
   webhookEventId?: string;
+  replyToken?: string;
+
   deliveryContext?: {
     isRedelivery?: boolean;
   };
+
   source?: {
     type?: "user" | "group" | "room";
     userId?: string;
     groupId?: string;
     roomId?: string;
   };
+
   message?: LineWebhookMessage;
 }
 
@@ -92,14 +102,17 @@ interface NormalizedMessage {
   type: SupportedLineMessageType;
   preview: string;
   text?: string;
+
   fileName?: string;
   fileSize?: number;
+
   location?: {
     title?: string;
     address?: string;
     latitude: number;
     longitude: number;
   };
+
   sticker?: {
     packageId: string;
     stickerId: string;
@@ -107,11 +120,6 @@ interface NormalizedMessage {
   };
 }
 
-/**
- * LINE ใช้ Channel Secret สร้าง HMAC-SHA256
- * จาก Request Body ดิบ แล้วส่งผลลัพธ์มาใน
- * Header ชื่อ x-line-signature
- */
 function verifyLineSignature(
   rawBody: string,
   signature: string,
@@ -156,9 +164,6 @@ function verifyLineSignature(
   }
 }
 
-/**
- * อ่าน Environment Variables ที่จำเป็น
- */
 function getLineCredentials(): {
   channelSecret: string;
   channelAccessToken: string;
@@ -187,9 +192,6 @@ function getLineCredentials(): {
   };
 }
 
-/**
- * อ่านโปรไฟล์ลูกค้าจาก LINE
- */
 async function getLineProfile(
   lineUserId: string,
   channelAccessToken: string
@@ -230,10 +232,128 @@ async function getLineProfile(
   }
 }
 
-/**
- * แปลงข้อความจาก LINE ให้อยู่ในรูปแบบ
- * ที่ LongTang Smart POS ใช้งาน
- */
+async function replyLineText(
+  replyToken: string,
+  text: string,
+  channelAccessToken: string
+): Promise<void> {
+  const response = await fetch(
+    LINE_REPLY_URL,
+    {
+      method: "POST",
+      headers: {
+        Authorization:
+          `Bearer ${channelAccessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        replyToken,
+        messages: [
+          {
+            type: "text",
+            text,
+          },
+        ],
+      }),
+      cache: "no-store",
+    }
+  );
+
+  if (!response.ok) {
+    const responseText =
+      await response.text();
+
+    throw new Error(
+      `ส่งข้อความตอบกลับ LINE ไม่สำเร็จ: ${response.status} ${responseText}`
+    );
+  }
+}
+
+function createReplyText(
+  normalizedMessage: NormalizedMessage,
+  displayName: string
+): string {
+  if (
+    normalizedMessage.type === "text" &&
+    normalizedMessage.text
+  ) {
+    const customerText =
+      normalizedMessage.text
+        .trim()
+        .toLowerCase();
+
+    if (
+      customerText === "เมนู" ||
+      customerText === "menu" ||
+      customerText.includes("สั่งอาหาร")
+    ) {
+      return [
+        `สวัสดีคุณ ${displayName} 👋`,
+        "",
+        "🍲 เมนูร้านหลงทั่ง",
+        "• ชาบูเสียบไม้",
+        "• หม่าล่าทั่ง",
+        "• หม่าล่าทอด",
+        "• หม่าล่าผัดแห้ง",
+        "",
+        "ไม้ละ 10 บาท",
+        "มีบริการส่งฟรีรอบมหาวิทยาลัย",
+        "",
+        "กดสั่งอาหารได้ที่",
+        ORDER_URL,
+      ].join("\n");
+    }
+
+    if (
+      customerText.includes("ติดตาม") ||
+      customerText.includes("ออเดอร์") ||
+      customerText.includes("คิว")
+    ) {
+      return [
+        `สวัสดีคุณ ${displayName}`,
+        "",
+        "สามารถดูคิวส่งและติดตามออเดอร์ได้ที่",
+        `${ORDER_URL}/track`,
+        "",
+        "กรุณาเตรียมเลขออเดอร์ของคุณไว้ด้วยนะคะ",
+      ].join("\n");
+    }
+
+    return [
+      `ได้รับข้อความของคุณ ${displayName} แล้วค่ะ 😊`,
+      "",
+      "พิมพ์คำว่า “เมนู”",
+      "เพื่อดูรายการอาหารและสั่งอาหารออนไลน์",
+    ].join("\n");
+  }
+
+  if (normalizedMessage.type === "image") {
+    return [
+      `ได้รับรูปภาพจากคุณ ${displayName} แล้วค่ะ 📷`,
+      "ทางร้านจะตรวจสอบให้เร็วที่สุดนะคะ",
+    ].join("\n");
+  }
+
+  if (normalizedMessage.type === "location") {
+    return [
+      `ได้รับตำแหน่งจัดส่งจากคุณ ${displayName} แล้วค่ะ 📍`,
+      "ทางร้านจะตรวจสอบสถานที่จัดส่งให้นะคะ",
+    ].join("\n");
+  }
+
+  if (normalizedMessage.type === "sticker") {
+    return [
+      `ขอบคุณสำหรับสติกเกอร์นะคะ ${displayName} 😊`,
+      "พิมพ์คำว่า “เมนู” เพื่อสั่งอาหารได้เลยค่ะ",
+    ].join("\n");
+  }
+
+  return [
+    `ได้รับข้อมูลจากคุณ ${displayName} แล้วค่ะ`,
+    "ทางร้านจะตรวจสอบให้เร็วที่สุดนะคะ",
+  ].join("\n");
+}
+
 function normalizeLineMessage(
   message: LineWebhookMessage
 ): NormalizedMessage {
@@ -325,11 +445,6 @@ function normalizeLineMessage(
   }
 }
 
-/**
- * ตรวจว่าข้อความเดิมเคยถูกบันทึกแล้วหรือไม่
- *
- * LINE อาจส่ง Webhook เดิมซ้ำได้ในกรณี Redelivery
- */
 async function messageAlreadyExists(
   lineUserId: string,
   lineMessageId: string
@@ -346,16 +461,13 @@ async function messageAlreadyExists(
   return snapshot.exists;
 }
 
-/**
- * บันทึกข้อความที่ลูกค้าส่งเข้ามา
- */
 async function saveIncomingMessage(
   lineUserId: string,
   message: LineWebhookMessage,
   normalizedMessage: NormalizedMessage,
   profile: LineProfile | null,
   event: LineWebhookEvent
-): Promise<void> {
+): Promise<boolean> {
   if (
     await messageAlreadyExists(
       lineUserId,
@@ -367,7 +479,7 @@ async function saveIncomingMessage(
       message.id
     );
 
-    return;
+    return false;
   }
 
   const now = FieldValue.serverTimestamp();
@@ -383,10 +495,6 @@ async function saveIncomingMessage(
     .collection(CUSTOMERS_COLLECTION)
     .doc(lineUserId);
 
-  /**
-   * ใช้ LINE Message ID เป็น Firestore Document ID
-   * ช่วยป้องกันการบันทึกข้อความซ้ำ
-   */
   const messageReference =
     conversationReference
       .collection(MESSAGES_SUBCOLLECTION)
@@ -457,42 +565,49 @@ async function saveIncomingMessage(
         { merge: true }
       );
 
-      transaction.set(messageReference, {
-        lineUserId,
-        lineMessageId: message.id,
-        webhookEventId:
-          event.webhookEventId ?? null,
-        isRedelivery:
-          event.deliveryContext
-            ?.isRedelivery ?? false,
-        direction: "incoming",
-        type: normalizedMessage.type,
-        text:
-          normalizedMessage.text ?? null,
-        contentUrl: null,
-        fileName:
-          normalizedMessage.fileName ?? null,
-        fileSize:
-          normalizedMessage.fileSize ?? null,
-        location:
-          normalizedMessage.location ?? null,
-        sticker:
-          normalizedMessage.sticker ?? null,
-        status: "received",
-        read: false,
-        eventTimestamp:
-          typeof event.timestamp === "number"
-            ? event.timestamp
-            : null,
-        createdAt: now,
-      });
+      transaction.set(
+        messageReference,
+        {
+          lineUserId,
+          lineMessageId: message.id,
+          webhookEventId:
+            event.webhookEventId ?? null,
+          isRedelivery:
+            event.deliveryContext
+              ?.isRedelivery ?? false,
+          direction: "incoming",
+          type: normalizedMessage.type,
+          text:
+            normalizedMessage.text ?? null,
+          contentUrl: null,
+          fileName:
+            normalizedMessage.fileName ??
+            null,
+          fileSize:
+            normalizedMessage.fileSize ??
+            null,
+          location:
+            normalizedMessage.location ??
+            null,
+          sticker:
+            normalizedMessage.sticker ??
+            null,
+          status: "received",
+          read: false,
+          eventTimestamp:
+            typeof event.timestamp ===
+            "number"
+              ? event.timestamp
+              : null,
+          createdAt: now,
+        }
+      );
     }
   );
+
+  return true;
 }
 
-/**
- * ประมวลผล Message Event แต่ละรายการ
- */
 async function handleMessageEvent(
   event: LineWebhookEvent,
   channelAccessToken: string
@@ -518,18 +633,46 @@ async function handleMessageEvent(
     channelAccessToken
   );
 
-  await saveIncomingMessage(
-    lineUserId,
-    message,
-    normalizedMessage,
-    profile,
-    event
+  const messageSaved =
+    await saveIncomingMessage(
+      lineUserId,
+      message,
+      normalizedMessage,
+      profile,
+      event
+    );
+
+  if (!messageSaved) {
+    return;
+  }
+
+  const replyToken =
+    event.replyToken?.trim();
+
+  if (!replyToken) {
+    console.warn(
+      "ไม่พบ replyToken จึงไม่สามารถตอบกลับ LINE ได้"
+    );
+
+    return;
+  }
+
+  const displayName =
+    profile?.displayName || "ลูกค้า";
+
+  const replyText =
+    createReplyText(
+      normalizedMessage,
+      displayName
+    );
+
+  await replyLineText(
+    replyToken,
+    replyText,
+    channelAccessToken
   );
 }
 
-/**
- * LINE ใช้ POST สำหรับส่ง Webhook
- */
 export async function POST(
   request: Request
 ): Promise<NextResponse> {
@@ -539,11 +682,8 @@ export async function POST(
       channelAccessToken,
     } = getLineCredentials();
 
-    /**
-     * ต้องอ่าน Request Body เป็นข้อความดิบก่อน
-     * ห้ามใช้ request.json() ก่อนตรวจ Signature
-     */
-    const rawBody = await request.text();
+    const rawBody =
+      await request.text();
 
     const signature =
       request.headers.get(
@@ -602,15 +742,11 @@ export async function POST(
       );
     }
 
-    const events = Array.isArray(body.events)
-      ? body.events
-      : [];
+    const events =
+      Array.isArray(body.events)
+        ? body.events
+        : [];
 
-    /**
-     * ตอนกด Verify ใน LINE Developers
-     * อาจได้รับ Request ที่ไม่มี Event
-     * ให้ตอบ 200 เพื่อยืนยันว่า Webhook ใช้งานได้
-     */
     if (events.length === 0) {
       return NextResponse.json(
         {
@@ -663,7 +799,8 @@ export async function POST(
           processed:
             events.length -
             failedEvents.length,
-          failed: failedEvents.length,
+          failed:
+            failedEvents.length,
         },
         {
           status: 500,
@@ -703,10 +840,6 @@ export async function POST(
   }
 }
 
-/**
- * ใช้เปิด URL ในเบราว์เซอร์เพื่อตรวจว่า
- * Route ถูกสร้างสำเร็จหรือไม่
- */
 export async function GET(): Promise<NextResponse> {
   return NextResponse.json({
     success: true,
