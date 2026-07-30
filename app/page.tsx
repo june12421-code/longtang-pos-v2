@@ -623,16 +623,17 @@ onChangeName={setCustomerName}
     }
 
     if (!customerPhone.trim()) {
-      alert("กรุณากรอกเบอร์โทร");
-      return;
-    }
+  alert("กรุณากรอกเบอร์โทร");
+  return;
+}
 
-    if (!customerAddress.trim()) {
-      alert("กรุณากรอกที่อยู่จัดส่ง");
-      return;
-    }
-if (!orderType) {
-  alert("กรุณาเลือกประเภทออเดอร์");
+if (!customerLine.trim()) {
+  alert("กรุณากรอกชื่อที่ใช้ใน LINE เพื่อให้ร้านติดต่อและจัดส่งได้");
+  return;
+}
+
+if (!customerAddress.trim()) {
+  alert("กรุณากรอกที่อยู่จัดส่ง");
   return;
 }
 if (orderType === "shabu" && !selectedSoup) {

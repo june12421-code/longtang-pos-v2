@@ -254,15 +254,28 @@ const shouldSelectSpicy =
 </label>
 
 <label style={labelStyle}>
-  LINE (ชื่อ หรือ ID)
-
-  <input
-    value={customerLine}
-    onChange={(event) => onChangeLine(event.target.value)}
-    placeholder="เช่น @097hokkw หรือ line123"
-    style={inputStyle}
-  />
+  ชื่อใน LINE (ใช้สำหรับติดต่อส่งอาหาร)
 </label>
+
+<input
+  value={customerLine}
+  onChange={(event) => onChangeLine(event.target.value)}
+  placeholder="เช่น 🐱น้องแป้ง✨, Aom💖, J (ใช้ชื่อที่แสดงใน LINE ได้เลย)"
+  style={inputStyle}
+/>
+
+<p
+  style={{
+    marginTop: 6,
+    fontSize: 12,
+    color: "#9ca3af",
+    lineHeight: 1.5,
+  }}
+>
+  📌 กรุณากรอกชื่อที่แสดงใน LINE ของลูกค้า (สามารถมีอีโมจิและสัญลักษณ์ได้)
+  ร้านจะใช้ชื่อนี้ในการค้นหาแชทเพื่อแจ้งสถานะออเดอร์และติดต่อเรื่องการจัดส่ง
+</p>
+
 
         <label style={labelStyle}>
           ที่อยู่จัดส่ง
