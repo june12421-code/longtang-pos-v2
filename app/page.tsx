@@ -35,60 +35,46 @@ const [customerPhone, setCustomerPhone] = useState("");
 const [customerLine, setCustomerLine] = useState("");
 const [lineUserId, setLineUserId] = useState("");
 useEffect(() => {
-useEffect(() => {
-
   async function initLiff() {
-
     try {
-
       await liff.init({
-
         liffId: "2010907314-DaG5Z29C",
-
       });
 
-
-
       if (!liff.isLoggedIn()) {
-
         liff.login();
-
         return;
-
       }
-
-
 
       const profile = await liff.getProfile();
 
-
-
       setLineUserId(profile.userId);
 
+      setCustomerName((currentName) => {
+        if (currentName) {
+          return currentName;
+        }
 
-
-      if (!customerName) {
-
-        setCustomerName(profile.displayName);
-
-      }
-
+        return profile.displayName;
+      });
     } catch (error) {
-
       console.error("LIFF Error:", error);
-
     }
-
   }
 
-
-
   initLiff();
-
 }, []);
-  const savedName = localStorage.getItem("lt_customer_name");
-  const savedPhone = localStorage.getItem("lt_customer_phone");
-  const savedLine = localStorage.getItem("lt_customer_line");
+
+useEffect(() => {
+  const savedName = localStorage.getItem(
+    "lt_customer_name"
+  );
+  const savedPhone = localStorage.getItem(
+    "lt_customer_phone"
+  );
+  const savedLine = localStorage.getItem(
+    "lt_customer_line"
+  );
 
   if (savedName) {
     setCustomerName(savedName);
@@ -102,6 +88,9 @@ useEffect(() => {
     setCustomerLine(savedLine);
   }
 }, []);
+
+const [customerAddress, setCustomerAddress] =
+  useState("");
 const [customerAddress, setCustomerAddress] = useState("");
 const [customerNote, setCustomerNote] = useState("");
 const [orderType, setOrderType] = useState("");
