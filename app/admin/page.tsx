@@ -939,10 +939,12 @@ useEffect(() => {
   <div>
     🍲 ประเภท:{" "}
     {order.orderType === "shabu"
-      ? "ชาบู"
-      : order.orderType === "fried"
-      ? "หม่าล่าทอด"
-      : order.orderType}
+  ? "ชาบู"
+  : order.orderType === "fried"
+  ? "หม่าล่าทอด"
+  : order.orderType === "dry"
+  ? "ผัดแห้ง"
+  : order.orderType}
   </div>
 
   {order.orderType === "shabu" && order.selectedSoup && (
