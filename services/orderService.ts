@@ -17,11 +17,18 @@ export type OrderItem = {
 };
 
 export type CreateOrderInput = {
-  customerName: string;
-  customerPhone: string;
-  customerLine: string;
-  customerAddress: string;
-  customerNote: string;
+ customerName: string;
+customerPhone: string;
+customerLine: string;
+
+/**
+ * LINE User ID
+ * ใช้ส่งข้อความอัตโนมัติกลับหาลูกค้า
+ */
+lineUserId?: string;
+
+customerAddress: string;
+customerNote: string; 
   orderType: string;
   selectedSoup: string;
   selectedSpicy: string;
@@ -86,7 +93,24 @@ export async function createOrder(
       updatedAt: serverTimestamp(),
     });
   });
-
+if (orderData.lineUserId) {
+  try {
+    await fetch("/api/line/push-order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        lineUserId: orderData.lineUserId,
+        customerName: orderData.customerName,
+        queueNumber: createdQueueNumber,
+        totalPrice: orderData.totalPrice,
+      }),
+    });
+  } catch (error) {
+    console.error("ส่งข้อความ LINE ไม่สำเร็จ:", error);
+  }
+}
     return {
     orderId: orderReference.id,
     queueNumber: createdQueueNumber,

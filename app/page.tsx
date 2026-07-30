@@ -1,6 +1,7 @@
  "use client";
 
 import { useEffect, useState } from "react";
+import liff from "@line/liff";
 import { getMenus } from "../services/menuService";
 import {
   getMinimumPrice,
@@ -32,7 +33,59 @@ const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 const [customerName, setCustomerName] = useState("");
 const [customerPhone, setCustomerPhone] = useState("");
 const [customerLine, setCustomerLine] = useState("");
+const [lineUserId, setLineUserId] = useState("");
 useEffect(() => {
+useEffect(() => {
+
+  async function initLiff() {
+
+    try {
+
+      await liff.init({
+
+        liffId: "2010907314-DaG5Z29C",
+
+      });
+
+
+
+      if (!liff.isLoggedIn()) {
+
+        liff.login();
+
+        return;
+
+      }
+
+
+
+      const profile = await liff.getProfile();
+
+
+
+      setLineUserId(profile.userId);
+
+
+
+      if (!customerName) {
+
+        setCustomerName(profile.displayName);
+
+      }
+
+    } catch (error) {
+
+      console.error("LIFF Error:", error);
+
+    }
+
+  }
+
+
+
+  initLiff();
+
+}, []);
   const savedName = localStorage.getItem("lt_customer_name");
   const savedPhone = localStorage.getItem("lt_customer_phone");
   const savedLine = localStorage.getItem("lt_customer_line");
@@ -652,12 +705,13 @@ if (totalPrice < minimumPrice) {
   );
   return;
 }
- const orderResult = await createOrder({
+const orderResult = await createOrder({
   customerName,
   customerPhone,
   customerLine,
   customerAddress,
   customerNote,
+  lineUserId: lineUserId || undefined,
   orderType,
   selectedSoup,
   selectedSpicy,
