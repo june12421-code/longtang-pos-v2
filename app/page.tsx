@@ -1,7 +1,6 @@
  "use client";
 
 import { useEffect, useState } from "react";
-import liff from "@line/liff";
 import { getMenus } from "../services/menuService";
 import {
   getMinimumPrice,
@@ -33,37 +32,6 @@ const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 const [customerName, setCustomerName] = useState("");
 const [customerPhone, setCustomerPhone] = useState("");
 const [customerLine, setCustomerLine] = useState("");
-const [lineUserId, setLineUserId] = useState("");
-useEffect(() => {
-  async function initLiff() {
-    try {
-      await liff.init({
-        liffId: "2010907314-DaG5Z29C",
-      });
-
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
-
-      const profile = await liff.getProfile();
-
-      setLineUserId(profile.userId);
-
-      setCustomerName((currentName) => {
-        if (currentName) {
-          return currentName;
-        }
-
-        return profile.displayName;
-      });
-    } catch (error) {
-      console.error("LIFF Error:", error);
-    }
-  }
-
-  initLiff();
-}, []);
 
 useEffect(() => {
   const savedName = localStorage.getItem(
@@ -394,7 +362,7 @@ if (shopStatus !== "open") {
             fontSize: "14px",
           }}
         >
-          สแกน QR แล้วกดปุ่มเพื่อเริ่มสั่งอาหาร
+          หลังจากสั่งแล้วอย่าลืมแจ้งหมายเลขคิวไปทางline ด้วยค่ะ
         </p>
       </div>
     </main>
@@ -699,7 +667,6 @@ const orderResult = await createOrder({
   customerLine,
   customerAddress,
   customerNote,
-  lineUserId: lineUserId || undefined,
   orderType,
   selectedSoup,
   selectedSpicy,
