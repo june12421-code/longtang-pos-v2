@@ -91,7 +91,6 @@ useEffect(() => {
 
 const [customerAddress, setCustomerAddress] =
   useState("");
-const [customerAddress, setCustomerAddress] = useState("");
 const [customerNote, setCustomerNote] = useState("");
 const [orderType, setOrderType] = useState("");
 const [selectedSoup, setSelectedSoup] = useState("");
