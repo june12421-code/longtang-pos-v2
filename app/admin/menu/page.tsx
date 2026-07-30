@@ -28,7 +28,8 @@ export default function AdminMenuPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
-
+const [selectedMenuIds, setSelectedMenuIds] =
+  useState<Set<string>>(new Set());
   async function loadMenus() {
     try {
       setLoading(true);
@@ -164,7 +165,64 @@ window.scrollTo({
       behavior: "smooth",
     });
   }
+function handleToggleMenuSelection(menuId: string) {
+  setSelectedMenuIds((currentIds) => {
+    const nextIds = new Set(currentIds);
 
+    if (nextIds.has(menuId)) {
+      nextIds.delete(menuId);
+    } else {
+      nextIds.add(menuId);
+    }
+
+    return nextIds;
+  });
+}
+
+function handleSelectAllMenus() {
+  setSelectedMenuIds(
+    new Set(menus.map((menu) => String(menu.id)))
+  );
+}
+
+function handleClearMenuSelection() {
+  setSelectedMenuIds(new Set());
+}
+async function handleBulkToggleAvailable(available: boolean) {
+  if (selectedMenuIds.size === 0) {
+    setMessage("กรุณาเลือกเมนูก่อน");
+    return;
+  }
+
+  try {
+    setSaving(true);
+
+    await Promise.all(
+      menus
+        .filter((menu) => selectedMenuIds.has(String(menu.id)))
+        .map((menu) =>
+          updateMenu(String(menu.id), {
+            available,
+          })
+        )
+    );
+
+    setSelectedMenuIds(new Set());
+
+    setMessage(
+      available
+        ? "เปิดขายหลายเมนูเรียบร้อยแล้ว"
+        : "ปิดขายหลายเมนูเรียบร้อยแล้ว"
+    );
+
+    await loadMenus();
+  } catch (error) {
+    console.error(error);
+    setMessage("เกิดข้อผิดพลาด");
+  } finally {
+    setSaving(false);
+  }
+}
   async function handleToggleAvailable(menu: MenuItem) {
     try {
       const currentAvailable = menu.available !== false;
@@ -602,8 +660,131 @@ window.scrollTo({
     color: "#111",
   }}
 >
-          รายการเมนูทั้งหมด ({menus.length})
-        </h2>
+  รายการเมนูทั้งหมด ({menus.length})
+</h2>
+
+<div
+  style={{
+    backgroundColor: "#ffffff",
+    borderRadius: "14px",
+    padding: "14px",
+    marginBottom: "16px",
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+  }}
+>
+  <div
+    style={{
+      display: "flex",
+      gap: "8px",
+      flexWrap: "wrap",
+      alignItems: "center",
+    }}
+  >
+    <button
+      type="button"
+      onClick={handleSelectAllMenus}
+      disabled={menus.length === 0}
+      style={{
+        padding: "10px 14px",
+        border: "none",
+        borderRadius: "9px",
+        backgroundColor: "#2563eb",
+        color: "#ffffff",
+        fontWeight: "bold",
+        cursor:
+          menus.length === 0
+            ? "not-allowed"
+            : "pointer",
+        opacity: menus.length === 0 ? 0.5 : 1,
+      }}
+    >
+      ☑️ เลือกทั้งหมด
+    </button>
+
+    <button
+      type="button"
+      onClick={handleClearMenuSelection}
+      disabled={selectedMenuIds.size === 0}
+      style={{
+        padding: "10px 14px",
+        border: "none",
+        borderRadius: "9px",
+        backgroundColor: "#e5e7eb",
+        color: "#111111",
+        fontWeight: "bold",
+        cursor:
+          selectedMenuIds.size === 0
+            ? "not-allowed"
+            : "pointer",
+        opacity:
+          selectedMenuIds.size === 0 ? 0.5 : 1,
+      }}
+    >
+      ⬜ ยกเลิกการเลือก
+    </button>
+
+   <button
+  type="button"
+  disabled={selectedMenuIds.size === 0 || saving}
+  onClick={() => handleBulkToggleAvailable(false)}
+  style={{
+    padding: "10px 14px",
+    border: "none",
+    borderRadius: "9px",
+    backgroundColor: "#ef4444",
+    color: "#ffffff",
+    fontWeight: "bold",
+    cursor:
+      selectedMenuIds.size === 0 || saving
+        ? "not-allowed"
+        : "pointer",
+    opacity:
+      selectedMenuIds.size === 0 || saving
+        ? 0.5
+        : 1,
+  }}
+>
+  🚫 ปิดขายที่เลือก
+</button>
+
+<button
+  type="button"
+  disabled={selectedMenuIds.size === 0 || saving}
+  onClick={() => handleBulkToggleAvailable(true)}
+  style={{
+    padding: "10px 14px",
+    border: "none",
+    borderRadius: "9px",
+    backgroundColor: "#22c55e",
+    color: "#ffffff",
+    fontWeight: "bold",
+    cursor:
+      selectedMenuIds.size === 0 || saving
+        ? "not-allowed"
+        : "pointer",
+    opacity:
+      selectedMenuIds.size === 0 || saving
+        ? 0.5
+        : 1,
+  }}
+>
+  ✅ เปิดขายที่เลือก
+</button>
+
+<span
+  style={{
+    marginLeft: "auto",
+    fontWeight: "bold",
+    color:
+      selectedMenuIds.size > 0
+        ? "#ff6600"
+        : "#666666",
+  }}
+>
+  เลือกแล้ว {selectedMenuIds.size} เมนู
+</span> 
+  </div>
+</div>
 
         {loading ? (
           <p>กำลังโหลดเมนู...</p>
@@ -629,16 +810,63 @@ window.scrollTo({
               const isAvailable = menu.available !== false;
 
               return (
-                <article
-                  key={String(menu.id)}
-                  style={{
-                    backgroundColor: "#ffffff",
-                    borderRadius: "14px",
-                    padding: "16px",
-                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
-                    opacity: isAvailable ? 1 : 0.6,
-                  }}
-                >
+ <article
+  key={String(menu.id)}
+  style={{
+    backgroundColor: selectedMenuIds.has(
+      String(menu.id)
+    )
+      ? "#fff7ed"
+      : "#ffffff",
+    borderRadius: "14px",
+    padding: "16px",
+    boxShadow: selectedMenuIds.has(
+      String(menu.id)
+    )
+      ? "0 0 0 3px #ff6600"
+      : "0 2px 8px rgba(0, 0, 0, 0.06)",
+    opacity: isAvailable ? 1 : 0.6,
+  }}
+>
+  <label
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      marginBottom: "14px",
+      padding: "10px",
+      borderRadius: "10px",
+      backgroundColor: selectedMenuIds.has(
+        String(menu.id)
+      )
+        ? "#ffedd5"
+        : "#f3f4f6",
+      color: "#111111",
+      fontWeight: "bold",
+      cursor: "pointer",
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={selectedMenuIds.has(
+        String(menu.id)
+      )}
+      onChange={() =>
+        handleToggleMenuSelection(
+          String(menu.id)
+        )
+      }
+      style={{
+        width: "22px",
+        height: "22px",
+        cursor: "pointer",
+      }}
+    />
+
+    <span>
+      เลือกเมนูนี้
+    </span>
+  </label>               
                   <div
   style={{
     display: "flex",
