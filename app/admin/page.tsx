@@ -1,17 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  collection,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  Timestamp,
-  writeBatch,
-} from "firebase/firestore";
 
-import { db } from "../../lib/firebase";
 import { updateOrderStatus } from "../../services/orderService";
 import {
   ShopStatus,
@@ -49,13 +39,10 @@ selectableSauceCount: number;
   status: string;
   paymentStatus: string;
   queueNumber?: string;  
-  createdAt?: Timestamp;
+  createdAt?: string;
 };
 
-    const ordersQuery = query(
-      collection(db, "orders"),
-      orderBy("createdAt", "desc")
-    );
+    
 export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
  const previousOrderIds = useRef<Set<string>>(new Set());
@@ -91,7 +78,7 @@ const completedCount = orders.filter(
 const todayOrders = orders.filter((order) => {
   if (!order.createdAt) return false;
 
-  const orderDate = order.createdAt.toDate();
+  const orderDate = new Date(order.createdAt);
   const today = new Date();
 
   return (
@@ -126,18 +113,85 @@ const thaiSupportSales = todayOrders
       order.paymentMethod === "thai-support"
   )
   .reduce((sum, order) => sum + order.totalPrice, 0);
-async function handleDeleteCompletedOrders() {
-  const completedOrders = orders.filter(
-    (order) => order.status === "completed"
-  );
+async function loadOrders() {
+  try {
+    const response = await fetch("/api/orders", {
+      method: "GET",
+      cache: "no-store",
+    });
 
-  if (completedOrders.length === 0) {
+    const result = (await response.json()) as {
+      orders?: Order[];
+      error?: string;
+    };
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || "อ่านออเดอร์ไม่สำเร็จ"
+      );
+    }
+
+    const orderList = result.orders ?? [];
+
+    const currentOrderIds = new Set(
+      orderList.map((order) => order.id)
+    );
+
+    if (isFirstLoad.current) {
+      previousOrderIds.current = currentOrderIds;
+      isFirstLoad.current = false;
+    } else {
+      const newOrders = orderList.filter(
+        (order) =>
+          !previousOrderIds.current.has(order.id)
+      );
+
+      if (newOrders.length > 0) {
+        playNotificationSound();
+      }
+
+      previousOrderIds.current = currentOrderIds;
+    }
+
+    setOrders(orderList);
+  } catch (error) {
+    console.error(
+      "อ่านออเดอร์จาก Supabase ไม่สำเร็จ:",
+      error
+    );
+  } finally {
+    setIsLoading(false);
+  }
+}
+async function handleChangeOrderStatus(
+  orderId: string,
+  status: string
+) {
+  try {
+    await updateOrderStatus(orderId, status);
+
+    await loadOrders();
+  } catch (error) {
+    console.error(
+      "เปลี่ยนสถานะออเดอร์ไม่สำเร็จ:",
+      error
+    );
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "เปลี่ยนสถานะออเดอร์ไม่สำเร็จ"
+    );
+  }
+}
+  async function handleDeleteCompletedOrders() {
+  if (completedCount === 0) {
     alert("ไม่มีออเดอร์ที่เสร็จแล้วให้ลบ");
     return;
   }
 
   const confirmed = window.confirm(
-    `ต้องการลบออเดอร์ที่เสร็จแล้วทั้งหมด ${completedOrders.length} รายการใช่หรือไม่?\n\nข้อมูลจะถูกลบถาวรและไม่สามารถกู้คืนได้`
+    `ต้องการลบออเดอร์ที่เสร็จแล้วทั้งหมด ${completedCount} รายการใช่หรือไม่?\n\nข้อมูลจะถูกลบถาวรและไม่สามารถกู้คืนได้`
   );
 
   if (!confirmed) {
@@ -147,25 +201,30 @@ async function handleDeleteCompletedOrders() {
   try {
     setIsDeletingCompleted(true);
 
-    const batch = writeBatch(db);
-
-    completedOrders.forEach((order) => {
-      const orderRef = doc(
-        db,
-        "orders",
-        order.id
-      );
-
-      batch.delete(orderRef);
+    const response = await fetch("/api/orders", {
+      method: "DELETE",
     });
 
-    await batch.commit();
+    const result = (await response.json()) as {
+      error?: string;
+      message?: string;
+      deletedCount?: number;
+    };
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || "ลบออเดอร์ไม่สำเร็จ"
+      );
+    }
 
     alert(
-      `ลบออเดอร์ที่เสร็จแล้ว ${completedOrders.length} รายการเรียบร้อยแล้ว`
+      result.message ||
+        "ลบออเดอร์ที่เสร็จแล้วเรียบร้อยแล้ว"
     );
 
     setStatusFilter("all");
+
+    await loadOrders();
   } catch (error) {
     console.error(
       "ลบออเดอร์ที่เสร็จแล้วไม่สำเร็จ:",
@@ -173,7 +232,9 @@ async function handleDeleteCompletedOrders() {
     );
 
     alert(
-      "ลบออเดอร์ไม่สำเร็จ กรุณาตรวจสอบโควต้า Firestore และดู Error ใน Console"
+      error instanceof Error
+        ? error.message
+        : "ลบออเดอร์ไม่สำเร็จ"
     );
   } finally {
     setIsDeletingCompleted(false);
@@ -440,50 +501,15 @@ useEffect(() => {
 }, []);
 
 useEffect(() => {
-  const unsubscribe = onSnapshot(
-    ordersQuery,
-    (snapshot) => {
-      const orderList: Order[] = snapshot.docs.map(
-        (document) => ({
-          id: document.id,
-          ...(document.data() as Omit<Order, "id">),
-        })
-      );
+  loadOrders();
 
-      const currentOrderIds = new Set(
-        orderList.map((order) => order.id)
-      );
+  const timer = window.setInterval(() => {
+    loadOrders();
+  }, 5000);
 
-      if (isFirstLoad.current) {
-        previousOrderIds.current = currentOrderIds;
-        isFirstLoad.current = false;
-      } else {
-        const newOrders = orderList.filter(
-          (order) =>
-            !previousOrderIds.current.has(order.id)
-        );
-
-        if (newOrders.length > 0) {
-          playNotificationSound();
-        }
-
-        previousOrderIds.current = currentOrderIds;
-      }
-
-      setOrders(orderList);
-      setIsLoading(false);
-    },
-    (error) => {
-      console.error(
-        "อ่านออเดอร์ไม่สำเร็จ:",
-        error
-      );
-
-      setIsLoading(false);
-    }
-  );
-
-  return () => unsubscribe();
+  return () => {
+    window.clearInterval(timer);
+  };
 }, []);
   useEffect(() => {
   const timer = setInterval(() => {
@@ -1114,25 +1140,40 @@ useEffect(() => {
   }}
 >
   <button
-    onClick={() => updateOrderStatus(order.id, "preparing")}
-    style={statusButtonStyle}
-  >
-    กำลังทำ
-  </button>
+  onClick={() =>
+    handleChangeOrderStatus(
+      order.id,
+      "preparing"
+    )
+  }
+  style={statusButtonStyle}
+>
+  กำลังทำ
+</button>
 
   <button
-    onClick={() => updateOrderStatus(order.id, "ready")}
-    style={statusButtonStyle}
-  >
-    พร้อมส่ง
-  </button>
+  onClick={() =>
+    handleChangeOrderStatus(
+      order.id,
+      "ready"
+    )
+  }
+  style={statusButtonStyle}
+>
+  พร้อมส่ง
+</button>
 
   <button
-    onClick={() => updateOrderStatus(order.id, "completed")}
-    style={statusButtonStyle}
-  >
-    เสร็จแล้ว
-  </button>
+  onClick={() =>
+    handleChangeOrderStatus(
+      order.id,
+      "completed"
+    )
+  }
+  style={statusButtonStyle}
+>
+  เสร็จแล้ว
+</button>
   <button
   onClick={() => printOrder(order)}
   style={statusButtonStyle}
@@ -1177,10 +1218,10 @@ useEffect(() => {
       marginBottom: 0,
       color:
         order.createdAt &&
-        getWaitingTime(order.createdAt.toDate()) >= 30
+        getWaitingTime(order.createdAt) >= 30
           ? "#ef4444"
           : order.createdAt &&
-            getWaitingTime(order.createdAt.toDate()) >= 20
+            getWaitingTime(order.createdAt) >= 20
           ? "#f59e0b"
           : "#22c55e",
       fontSize: "14px",
@@ -1188,7 +1229,7 @@ useEffect(() => {
   >
     🕒 รอแล้ว{" "}
     {order.createdAt
-      ? getWaitingTime(order.createdAt.toDate())
+      ? getWaitingTime(order.createdAt)
       : 0}{" "}
     นาที
   </p>

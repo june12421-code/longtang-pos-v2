@@ -1,14 +1,3 @@
-import {
-  addDoc,
-  collection,
-  doc,
-  runTransaction,
-  serverTimestamp,
-  updateDoc,
-} from "firebase/firestore";
-
-import { db } from "../lib/firebase";
-
 export type OrderItem = {
   id: number;
   name: string;
@@ -17,30 +6,32 @@ export type OrderItem = {
 };
 
 export type CreateOrderInput = {
- customerName: string;
-customerPhone: string;
-customerLine: string;
+  customerName: string;
+  customerPhone: string;
+  customerLine: string;
 
-/**
- * LINE User ID
- * ใช้ส่งข้อความอัตโนมัติกลับหาลูกค้า
- */
-lineUserId?: string;
+  /**
+   * LINE User ID
+   * ใช้ส่งข้อความอัตโนมัติกลับหาลูกค้า
+   */
+  lineUserId?: string;
 
-customerAddress: string;
-customerNote: string; 
+  customerAddress: string;
+  customerNote: string;
+
   orderType: string;
   selectedSoup: string;
   selectedSpicy: string;
 
-sauces: {
-  sesame: number;
-  suki: number;
-};
+  sauces: {
+    sesame: number;
+    suki: number;
+  };
 
-malaSauceCount: number;
-selectableSauceCount: number;
-paymentMethod: string;
+  malaSauceCount: number;
+  selectableSauceCount: number;
+  paymentMethod: string;
+
   items: OrderItem[];
   totalPrice: number;
 };
@@ -50,81 +41,82 @@ export type CreateOrderResult = {
   queueNumber: string;
 };
 
+type ApiErrorResponse = {
+  error?: string;
+};
+
 export async function createOrder(
   orderData: CreateOrderInput
 ): Promise<CreateOrderResult> {
-  const today = new Date();
-
-  const dateKey = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, "0"),
-    String(today.getDate()).padStart(2, "0"),
-  ].join("-");
-
-   const counterReference = doc(db, "queueCounters", dateKey);
-  const orderReference = doc(collection(db, "orders"));
-
-  let createdQueueNumber = ""; 
-
-  await runTransaction(db, async (transaction) => {
-    const counterSnapshot = await transaction.get(counterReference);
-
-    const lastNumber = counterSnapshot.exists()
-      ? counterSnapshot.data().lastNumber ?? 0
-      : 0;
-
-        const nextNumber = lastNumber + 1;
-    const queueNumber = `A${String(nextNumber).padStart(3, "0")}`;
-
-    createdQueueNumber = queueNumber;
-
-    transaction.set(counterReference, {
-      lastNumber: nextNumber,
-      updatedAt: serverTimestamp(),
-    });
-
-    transaction.set(orderReference, {
-      ...orderData,
-      status: "new",
-      paymentStatus: "pending",
-      staffName: null,
-      queueNumber,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+  const response = await fetch("/api/orders", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(orderData),
   });
-if (orderData.lineUserId) {
-  try {
-    await fetch("/api/line/push-order", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        lineUserId: orderData.lineUserId,
-        customerName: orderData.customerName,
-        queueNumber: createdQueueNumber,
-        totalPrice: orderData.totalPrice,
-      }),
-    });
-  } catch (error) {
-    console.error("ส่งข้อความ LINE ไม่สำเร็จ:", error);
+
+  const result = (await response.json()) as
+    | CreateOrderResult
+    | ApiErrorResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      "error" in result && result.error
+        ? result.error
+        : "บันทึกออเดอร์ไม่สำเร็จ"
+    );
   }
+
+  const createdOrder = result as CreateOrderResult;
+
+  if (orderData.lineUserId) {
+    try {
+      await fetch("/api/line/push-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lineUserId: orderData.lineUserId,
+          customerName: orderData.customerName,
+          queueNumber: createdOrder.queueNumber,
+          totalPrice: orderData.totalPrice,
+        }),
+      });
+    } catch (error) {
+      console.error(
+        "ส่งข้อความ LINE ไม่สำเร็จ:",
+        error
+      );
+    }
+  }
+
+  return createdOrder;
 }
-    return {
-    orderId: orderReference.id,
-    queueNumber: createdQueueNumber,
-  };
-}
-  
+
 export async function updateOrderStatus(
   orderId: string,
   status: string
 ): Promise<void> {
-  const orderReference = doc(db, "orders", orderId);
-
-  await updateDoc(orderReference, {
-    status,
-    updatedAt: serverTimestamp(),
+  const response = await fetch("/api/orders", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      orderId,
+      status,
+    }),
   });
+
+  const result =
+    (await response.json()) as ApiErrorResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      result.error ||
+        "เปลี่ยนสถานะออเดอร์ไม่สำเร็จ"
+    );
+  }
 }
