@@ -768,7 +768,7 @@ async function handleBulkToggleAvailable(available: boolean) {
         : 1,
   }}
 >
-  ✅ เปิดขายที่เลือก
+  ✅ เปิดขายที่เลือกห
 </button>
 
 <span
