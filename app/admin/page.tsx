@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import {
   collection,
+  doc,
   onSnapshot,
   orderBy,
   query,
   Timestamp,
+  writeBatch,
 } from "firebase/firestore";
 
 import { db } from "../../lib/firebase";
@@ -68,6 +70,8 @@ const [shopMessage, setShopMessage] =
 const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeletingCompleted, setIsDeletingCompleted] =
+  useState(false);
   const [, forceUpdate] = useState(0);
   const pendingCount = orders.filter(
   (order) => order.status === "new"
@@ -122,7 +126,60 @@ const thaiSupportSales = todayOrders
       order.paymentMethod === "thai-support"
   )
   .reduce((sum, order) => sum + order.totalPrice, 0);
-async function handleUpdateShopSettings(
+async function handleDeleteCompletedOrders() {
+  const completedOrders = orders.filter(
+    (order) => order.status === "completed"
+  );
+
+  if (completedOrders.length === 0) {
+    alert("ไม่มีออเดอร์ที่เสร็จแล้วให้ลบ");
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `ต้องการลบออเดอร์ที่เสร็จแล้วทั้งหมด ${completedOrders.length} รายการใช่หรือไม่?\n\nข้อมูลจะถูกลบถาวรและไม่สามารถกู้คืนได้`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    setIsDeletingCompleted(true);
+
+    const batch = writeBatch(db);
+
+    completedOrders.forEach((order) => {
+      const orderRef = doc(
+        db,
+        "orders",
+        order.id
+      );
+
+      batch.delete(orderRef);
+    });
+
+    await batch.commit();
+
+    alert(
+      `ลบออเดอร์ที่เสร็จแล้ว ${completedOrders.length} รายการเรียบร้อยแล้ว`
+    );
+
+    setStatusFilter("all");
+  } catch (error) {
+    console.error(
+      "ลบออเดอร์ที่เสร็จแล้วไม่สำเร็จ:",
+      error
+    );
+
+    alert(
+      "ลบออเดอร์ไม่สำเร็จ กรุณาตรวจสอบโควต้า Firestore และดู Error ใน Console"
+    );
+  } finally {
+    setIsDeletingCompleted(false);
+  }
+}
+  async function handleUpdateShopSettings(
   status: ShopStatus,
   message: string
 ) {
@@ -660,6 +717,41 @@ useEffect(() => {
     >
       ✅ เสร็จแล้ว
     </button>
+    <button
+  type="button"
+  onClick={handleDeleteCompletedOrders}
+  disabled={
+    completedCount === 0 ||
+    isDeletingCompleted
+  }
+  style={{
+    marginLeft: "8px",
+    padding: "8px 12px",
+    border: "none",
+    borderRadius: "8px",
+    background:
+      completedCount === 0 ||
+      isDeletingCompleted
+        ? "#6b7280"
+        : "#dc2626",
+    color: "#ffffff",
+    cursor:
+      completedCount === 0 ||
+      isDeletingCompleted
+        ? "not-allowed"
+        : "pointer",
+    fontWeight: "bold",
+    opacity:
+      completedCount === 0 ||
+      isDeletingCompleted
+        ? 0.6
+        : 1,
+  }}
+>
+  {isDeletingCompleted
+    ? "⏳ กำลังลบ..."
+    : `🗑️ ล้างออเดอร์เสร็จแล้ว (${completedCount})`}
+</button>
   </div>
 </header>
 <div
