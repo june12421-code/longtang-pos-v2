@@ -416,21 +416,55 @@ function printOrder(order: Order) {
 <p style="font-size:24px;font-weight:bold;margin-bottom:8px;">
   คิว: ${order.queueNumber ?? "-"}
 </p>
-      <p><strong>ลูกค้า:</strong> ${order.customerName}</p>
-<p><strong>โทร:</strong> ${order.customerPhone}</p>
-
-<p>
-  <strong>ชำระเงิน:</strong>
-  ${
-    order.paymentMethod === "cash"
-      ? "เงินสด"
-      : order.paymentMethod === "transfer"
-      ? "โอนเงิน"
-      : order.paymentMethod === "thai-support"
-      ? "ไทยช่วยไทย"
-      : "ยังไม่มีข้อมูล"
-  }
+      <p>
+  <strong>ลูกค้า:</strong>
+  ${order.customerName}
 </p>
+
+<div
+  style="
+    font-size:22px;
+    font-weight:bold;
+    margin-top:10px;
+    margin-bottom:6px;
+  "
+>
+📱 LINE
+</div>
+
+<div
+  style="
+    font-size:26px;
+    font-weight:bold;
+    color:#000;
+    margin-bottom:10px;
+    word-break:break-word;
+  "
+>
+${order.customerLine || "-"}
+</div>
+
+<div
+  style="
+    font-size:22px;
+    font-weight:bold;
+    margin-bottom:4px;
+  "
+>
+☎ โทร
+</div>
+
+<div
+  style="
+    font-size:24px;
+    font-weight:bold;
+    margin-bottom:10px;
+  "
+>
+${order.customerPhone}
+</div>
+
+<p><strong>ชำระเงิน:</strong> ${order.paymentMethod}</p>
 
 <p><strong>ที่อยู่:</strong> ${order.customerAddress}</p>  
 
@@ -445,7 +479,28 @@ function printOrder(order: Order) {
           <span>${order.totalPrice} บาท</span>
         </div>
 
-        <p><strong>ประเภท:</strong> ${order.orderType}</p>
+        <p
+  style="
+    font-size: 24px;
+    font-weight: bold;
+    margin: 10px 0;
+    padding: 8px 0;
+    text-align: center;
+    border-top: 1px dashed #000;
+    border-bottom: 1px dashed #000;
+  "
+>
+  ประเภทออเดอร์:
+  ${
+    order.orderType === "shabu"
+      ? "ชาบู"
+      : order.orderType === "dry"
+      ? "ผัดแห้ง"
+      : order.orderType === "fried"
+      ? "ทอด"
+      : order.orderType
+  }
+</p>
         <p><strong>น้ำซุป:</strong> ${order.selectedSoup || "-"}</p>
         <p><strong>ความเผ็ด:</strong> ${order.selectedSpicy || "-"}</p>
 
