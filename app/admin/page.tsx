@@ -389,7 +389,7 @@ function printOrder(order: Order) {
       <body>
         <div class="center">
 
-  <h1 style="margin:0;font-size:26px;">
+  <h1 style="margin:0;font-size:16px;">
     🍲 หลงทั่ง
   </h1>
 
@@ -423,7 +423,7 @@ function printOrder(order: Order) {
 
 <div
   style="
-    font-size:22px;
+    font-size:16px;
     font-weight:bold;
     margin-top:10px;
     margin-bottom:6px;
@@ -434,7 +434,7 @@ function printOrder(order: Order) {
 
 <div
   style="
-    font-size:26px;
+    font-size:16px;
     font-weight:bold;
     color:#000;
     margin-bottom:10px;
@@ -446,7 +446,7 @@ ${order.customerLine || "-"}
 
 <div
   style="
-    font-size:22px;
+    font-size:16px;
     font-weight:bold;
     margin-bottom:4px;
   "
@@ -456,7 +456,7 @@ ${order.customerLine || "-"}
 
 <div
   style="
-    font-size:24px;
+    font-size:16px;
     font-weight:bold;
     margin-bottom:10px;
   "
@@ -481,7 +481,7 @@ ${order.customerPhone}
 
         <p
   style="
-    font-size: 24px;
+    font-size: 18px;
     font-weight: bold;
     margin: 10px 0;
     padding: 8px 0;
