@@ -578,6 +578,13 @@ onChangeOrderType={(value) => {
 onChangeSoup={(value) => {
   setSelectedSoup(value);
 
+  const malaSoups = [
+    "หม่าล่า",
+    "หม่าล่านม",
+    "หม่าล่าผสมน้ำดำ",
+    "ซุปหม่าล่าผสมซุปกระดูกนม",
+  ];
+
   const soupsWithoutSpicy = [
     "ซุปกระดูกนม",
     "กระดูกนม",
@@ -586,6 +593,14 @@ onChangeSoup={(value) => {
   ];
 
   if (soupsWithoutSpicy.includes(value)) {
+    setSelectedSpicy("");
+    return;
+  }
+
+  if (
+    malaSoups.includes(value) &&
+    selectedSpicy === "ไม่เผ็ด"
+  ) {
     setSelectedSpicy("");
   }
 }}
@@ -631,7 +646,10 @@ if (!customerLine.trim()) {
   alert("กรุณากรอกชื่อที่ใช้ใน LINE เพื่อให้ร้านติดต่อและจัดส่งได้");
   return;
 }
-
+if (!orderType) {
+  alert("กรุณาเลือกประเภทออเดอร์");
+  return;
+}
 if (!customerAddress.trim()) {
   alert("กรุณากรอกที่อยู่จัดส่ง");
   return;
@@ -652,6 +670,20 @@ const requiresSpicy =
 
 if (requiresSpicy && !selectedSpicy) {
   alert("กรุณาเลือกระดับความเผ็ด");
+  return;
+}
+const malaSoups = [
+  "หม่าล่า",
+  "หม่าล่านม",
+  "หม่าล่าผสมน้ำดำ",
+  "ซุปหม่าล่าผสมซุปกระดูกนม",
+];
+
+if (
+  malaSoups.includes(selectedSoup) &&
+  selectedSpicy === "ไม่เผ็ด"
+) {
+  alert("ซุปหม่าล่าไม่สามารถเลือก 'ไม่เผ็ด' ได้");
   return;
 }
 const minimumPrice = getMinimumPrice(orderType);
