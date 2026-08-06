@@ -2,13 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import {
-  collection,
-  onSnapshot,
-  Timestamp,
-} from "firebase/firestore";
-
-import { db } from "../../lib/firebase";
+import { Timestamp } from "firebase/firestore";
 
 type TrackingOrder = {
   id: string;
@@ -18,7 +12,7 @@ type TrackingOrder = {
   customerName: string;
   orderType: string;
   totalPrice: number;
-  createdAt: Timestamp | null;
+  createdAt: Timestamp | string | null;
 };
 
 const statusOrder = [
@@ -37,12 +31,22 @@ function getQueueNumberValue(queueNumber: string) {
   return Number(numberOnly) || 0;
 }
 
-function isToday(timestamp: Timestamp | null) {
+function isToday(
+  timestamp: Timestamp | string | null
+) {
   if (!timestamp) {
     return false;
   }
 
-  const orderDate = timestamp.toDate();
+  const orderDate =
+    timestamp instanceof Timestamp
+      ? timestamp.toDate()
+      : new Date(timestamp);
+
+  if (Number.isNaN(orderDate.getTime())) {
+    return false;
+  }
+
   const today = new Date();
 
   return (
@@ -156,43 +160,52 @@ export default function TrackPage() {
   );
   const [loading, setLoading] = useState(true);
   const [searchMessage, setSearchMessage] = useState("");
+async function loadOrders() {
+  try {
+    const response = await fetch("/api/orders", {
+      method: "GET",
+      cache: "no-store",
+    });
 
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, "orders"),
-      (snapshot) => {
-        const orderData: TrackingOrder[] = snapshot.docs.map(
-          (orderDocument) => {
-            const data = orderDocument.data();
+    const result = (await response.json()) as {
+      orders?: TrackingOrder[];
+      error?: string;
+    };
 
-            return {
-              id: orderDocument.id,
-              queueNumber: String(data.queueNumber ?? ""),
-              status: String(data.status ?? "new"),
-              customerLine: String(data.customerLine ?? ""),
-              customerName: String(data.customerName ?? ""),
-              orderType: String(data.orderType ?? ""),
-              totalPrice: Number(data.totalPrice ?? 0),
-              createdAt:
-                data.createdAt instanceof Timestamp
-                  ? data.createdAt
-                  : null,
-            };
-          }
-        );
+    if (!response.ok) {
+      throw new Error(
+        result.error || "โหลดสถานะออเดอร์ไม่สำเร็จ"
+      );
+    }
 
-        setOrders(orderData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("โหลดสถานะออเดอร์ไม่สำเร็จ:", error);
-        setSearchMessage("ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่");
-        setLoading(false);
-      }
+    setOrders(result.orders ?? []);
+    setSearchMessage("");
+  } catch (error) {
+    console.error(
+      "โหลดสถานะออเดอร์จาก Supabase ไม่สำเร็จ:",
+      error
     );
 
-    return () => unsubscribe();
-  }, []);
+    setSearchMessage(
+      error instanceof Error
+        ? error.message
+        : "ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่"
+    );
+  } finally {
+    setLoading(false);
+  }
+}
+  useEffect(() => {
+  loadOrders();
+
+  const timer = window.setInterval(() => {
+    loadOrders();
+  }, 5000);
+
+  return () => {
+    window.clearInterval(timer);
+  };
+}, []);
 
   const todayOrders = useMemo(() => {
     return orders
