@@ -81,6 +81,7 @@ onConvertToDry,
   onConfirm,
 }: CheckoutProps) {
   const soupsWithoutSpicy = [
+  "ซุปกระดูก",
   "ซุปกระดูกนม",
   "กระดูกนม",
   "น้ำดำ",

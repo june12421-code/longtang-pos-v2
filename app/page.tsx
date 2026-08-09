@@ -584,11 +584,12 @@ onChangeSoup={(value) => {
   ];
 
   const soupsWithoutSpicy = [
-    "ซุปกระดูกนม",
-    "กระดูกนม",
-    "น้ำดำ",
-    "น้ำใส",
-  ];
+  "ซุปกระดูก",
+  "ซุปกระดูกนม",
+  "กระดูกนม",
+  "น้ำดำ",
+  "น้ำใส",
+];
 
   if (soupsWithoutSpicy.includes(value)) {
     setSelectedSpicy("");
@@ -656,6 +657,7 @@ if (orderType === "shabu" && !selectedSoup) {
   alert("กรุณาเลือกน้ำซุป");
   return;
 }const soupsWithoutSpicy = [
+  "ซุปกระดูก",
   "ซุปกระดูกนม",
   "กระดูกนม",
   "น้ำดำ",
