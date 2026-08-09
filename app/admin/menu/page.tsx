@@ -30,6 +30,7 @@ export default function AdminMenuPage() {
   const [showForm, setShowForm] = useState(false);
 const [selectedMenuIds, setSelectedMenuIds] =
   useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
   async function loadMenus() {
     try {
       setLoading(true);
@@ -52,7 +53,24 @@ const [selectedMenuIds, setSelectedMenuIds] =
   useEffect(() => {
     loadMenus();
   }, []);
+const filteredMenus = menus.filter((menu) => {
+  const keyword = searchTerm.trim().toLowerCase();
 
+  if (!keyword) {
+    return true;
+  }
+
+  const menuName = menu.name.toLowerCase();
+
+  const menuCategory = (
+    menu.category ?? ""
+  ).toLowerCase();
+
+  return (
+    menuName.includes(keyword) ||
+    menuCategory.includes(keyword)
+  );
+});
 function resetForm() {
   setName("");
   setPrice("");
@@ -662,7 +680,85 @@ async function handleBulkToggleAvailable(available: boolean) {
 >
   รายการเมนูทั้งหมด ({menus.length})
 </h2>
+<div
+  style={{
+    backgroundColor: "#ffffff",
+    borderRadius: "14px",
+    padding: "14px",
+    marginBottom: "16px",
+    boxShadow:
+      "0 2px 8px rgba(0, 0, 0, 0.06)",
+  }}
+>
+  <label
+    htmlFor="menu-search"
+    style={{
+      display: "block",
+      marginBottom: "8px",
+      fontWeight: "bold",
+      color: "#111111",
+    }}
+  >
+    🔎 ค้นหาสินค้า
+  </label>
 
+  <input
+    id="menu-search"
+    type="search"
+    value={searchTerm}
+    onChange={(event) =>
+      setSearchTerm(event.target.value)
+    }
+    placeholder="ค้นหาชื่อสินค้า หรือหมวดหมู่"
+    style={{
+      width: "100%",
+      padding: "12px 14px",
+      border: "1px solid #cccccc",
+      borderRadius: "10px",
+      backgroundColor: "#ffffff",
+      color: "#111111",
+      fontSize: "16px",
+      outline: "none",
+    }}
+  />
+
+  {searchTerm.trim() && (
+    <div
+      style={{
+        marginTop: "10px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: "10px",
+      }}
+    >
+      <span
+        style={{
+          color: "#666666",
+          fontSize: "14px",
+        }}
+      >
+        พบ {filteredMenus.length} เมนู
+      </span>
+
+      <button
+        type="button"
+        onClick={() => setSearchTerm("")}
+        style={{
+          padding: "7px 10px",
+          border: "none",
+          borderRadius: "8px",
+          backgroundColor: "#e5e7eb",
+          color: "#111111",
+          fontWeight: "bold",
+          cursor: "pointer",
+        }}
+      >
+        ล้างคำค้นหา
+      </button>
+    </div>
+  )}
+</div>
 <div
   style={{
     backgroundColor: "#ffffff",
@@ -788,7 +884,7 @@ async function handleBulkToggleAvailable(available: boolean) {
 
         {loading ? (
           <p>กำลังโหลดเมนู...</p>
-        ) : menus.length === 0 ? (
+        ) : filteredMenus.length === 0 ? (
           <div
             style={{
               backgroundColor: "#ffffff",
@@ -797,7 +893,9 @@ async function handleBulkToggleAvailable(available: boolean) {
               textAlign: "center",
             }}
           >
-            ยังไม่มีเมนูใน Firestore
+            {searchTerm.trim()
+  ? "ไม่พบสินค้าที่ค้นหา"
+  : "ยังไม่มีเมนูใน Firestore"}
           </div>
         ) : (
           <div
@@ -806,7 +904,7 @@ async function handleBulkToggleAvailable(available: boolean) {
               gap: "12px",
             }}
           >
-            {menus.map((menu) => {
+            {filteredMenus.map((menu) => {
               const isAvailable = menu.available !== false;
 
               return (
