@@ -93,14 +93,12 @@ useEffect(() => {
     try {
       const menuData = await getMenus();
 
-      const availableMenus = menuData
-        .filter((menu) => menu.available !== false)
-        .sort(
-          (a, b) =>
-            (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
-        );
+      const sortedMenus = menuData.sort(
+        (a, b) =>
+          (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+      );
 
-      setMenus(availableMenus);
+      setMenus(sortedMenus);
     } catch (error) {
       console.error("โหลดเมนูไม่สำเร็จ:", error);
     }
