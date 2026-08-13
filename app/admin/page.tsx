@@ -315,28 +315,134 @@ function getWaitingTime(createdAt: Date | string | number) {
   return diffMinutes;
 }
 function printOrder(order: Order) {
-  const printWindow = window.open("", "_blank", "width=420,height=700");
+  const text = `
+ใบรับออเดอร์
+------------------------------
+
+คิว: ${order.queueNumber ?? "-"}
+
+ลูกค้า: ${order.customerName}
+โทร: ${order.customerPhone}
+LINE: ${order.customerLine || "-"}
+
+ชำระเงิน: ${
+    order.paymentMethod === "cash"
+      ? "เงินสด"
+      : order.paymentMethod === "transfer"
+      ? "โอนเงิน"
+      : order.paymentMethod === "thai-support"
+      ? "ไทยช่วยไทย"
+      : "-"
+  }
+
+ที่อยู่:
+${order.customerAddress}
+
+------------------------------
+
+รายการอาหาร
+`;
+
+  const itemsText = order.items
+    .map(
+      (item, index) =>
+        `${index + 1}. ${item.name} x ${item.quantity} = ${
+          item.price * item.quantity
+        } บาท`
+    )
+    .join("\n");
+
+  const detailText = `
+
+${itemsText}
+
+------------------------------
+
+รวม: ${order.totalPrice} บาท
+
+ประเภทออเดอร์: ${
+    order.orderType === "shabu"
+      ? "ชาบู"
+      : order.orderType === "fried"
+      ? "หม่าล่าทอด"
+      : order.orderType === "dry"
+      ? "ผัดแห้ง"
+      : order.orderType
+  }
+
+${
+  order.orderType === "shabu" && order.selectedSoup
+    ? `น้ำซุป: ${order.selectedSoup}`
+    : ""
+}
+
+${
+  order.selectedSpicy
+    ? `ความเผ็ด: ${order.selectedSpicy}`
+    : ""
+}
+
+${
+  order.malaSauceCount > 0
+    ? `ซอสหม่าล่า: ${order.malaSauceCount} ถ้วย`
+    : ""
+}
+
+${
+  order.sauces?.sesame > 0
+    ? `น้ำจิ้มงา: ${order.sauces.sesame} ถ้วย`
+    : ""
+}
+
+${
+  order.sauces?.suki > 0
+    ? `น้ำจิ้มสุกี้: ${order.sauces.suki} ถ้วย`
+    : ""
+}
+
+${
+  order.customerNote
+    ? `หมายเหตุ: ${order.customerNote}`
+    : ""
+}
+
+------------------------------
+
+หลงทั่ง
+ชาบูหม่าล่า • หม่าล่าทอด • หม่าล่าผัดแห้ง
+โทร 094-7484287
+
+`;
+
+  const printText = text + detailText;
+
+  // ถ้าเปิดผ่าน Android App
+  if (
+    typeof window !== "undefined" &&
+    "AndroidPrinter" in window
+  ) {
+    (
+      window as typeof window & {
+        AndroidPrinter: {
+          printOrder: (text: string) => void;
+        };
+      }
+    ).AndroidPrinter.printOrder(printText);
+
+    return;
+  }
+
+  // ถ้าเปิดผ่านเว็บคอมพิวเตอร์
+  const printWindow = window.open(
+    "",
+    "_blank",
+    "width=420,height=700"
+  );
 
   if (!printWindow) {
     alert("กรุณาอนุญาต Popup เพื่อพิมพ์ใบออเดอร์");
     return;
   }
-
-  const itemsHtml = order.items
-  .map(
-    (item, index) => `
-      <div class="row">
-        <span>
-          ${index + 1}. ${item.name} × ${item.quantity}
-        </span>
-
-        <span>
-          ${item.price * item.quantity} บาท
-        </span>
-      </div>
-    `
-  )
-  .join("");
 
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -357,189 +463,22 @@ function printOrder(order: Order) {
             font-family: Arial, sans-serif;
             color: #000;
             font-size: 14px;
-          }
-
-          h1, h2, p {
-            margin: 4px 0;
-          }
-
-          .center {
-            text-align: center;
-          }
-
-          .row {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            margin: 5px 0;
-          }
-
-          .divider {
-            border-top: 1px dashed #000;
-            margin: 10px 0;
-          }
-
-          .total {
-            font-size: 20px;
-            font-weight: bold;
+            white-space: pre-wrap;
           }
         </style>
       </head>
 
-      <body>
-        <div class="center">
+      <body>${printText}</body>
 
-  <h1 style="margin:0;font-size:16px;">
-    🍲 หลงทั่ง
-  </h1>
+      <script>
+        window.onload = function () {
+          window.print();
 
-  <div style="font-size:15px;">
-    ชาบูหม่าล่า • หม่าล่าทอด • หม่าล่าผัดแห้ง
-  </div>
-
-  <div style="margin-top:6px;">
-    เปิดทุกวัน 17:30 - 02:00 น.
-  </div>
-
-  <div>
-    โทร 094-7484287
-  </div>
-
-  <div style="margin-top:6px;font-weight:bold;">
-    ใบรับออเดอร์
-  </div>
-
-</div>
-
-<div class="divider"></div>
-
-<p style="font-size:24px;font-weight:bold;margin-bottom:8px;">
-  คิว: ${order.queueNumber ?? "-"}
-</p>
-      <p>
-  <strong>ลูกค้า:</strong>
-  ${order.customerName}
-</p>
-
-<div
-  style="
-    font-size:16px;
-    font-weight:bold;
-    margin-top:10px;
-    margin-bottom:6px;
-  "
->
-📱 LINE
-</div>
-
-<div
-  style="
-    font-size:16px;
-    font-weight:bold;
-    color:#000;
-    margin-bottom:10px;
-    word-break:break-word;
-  "
->
-${order.customerLine || "-"}
-</div>
-
-<div
-  style="
-    font-size:16px;
-    font-weight:bold;
-    margin-bottom:4px;
-  "
->
-☎ โทร
-</div>
-
-<div
-  style="
-    font-size:16px;
-    font-weight:bold;
-    margin-bottom:10px;
-  "
->
-${order.customerPhone}
-</div>
-
-<p><strong>ชำระเงิน:</strong> ${order.paymentMethod}</p>
-
-<p><strong>ที่อยู่:</strong> ${order.customerAddress}</p>  
-
-        <div class="divider"></div>
-
-        ${itemsHtml}
-
-        <div class="divider"></div>
-
-        <div class="row total">
-          <span>รวม</span>
-          <span>${order.totalPrice} บาท</span>
-        </div>
-
-        <p
-  style="
-    font-size: 18px;
-    font-weight: bold;
-    margin: 10px 0;
-    padding: 8px 0;
-    text-align: center;
-    border-top: 1px dashed #000;
-    border-bottom: 1px dashed #000;
-  "
->
-  ประเภทออเดอร์:
-  ${
-    order.orderType === "shabu"
-      ? "ชาบู"
-      : order.orderType === "dry"
-      ? "ผัดแห้ง"
-      : order.orderType === "fried"
-      ? "ทอด"
-      : order.orderType
-  }
-</p>
-        <p><strong>น้ำซุป:</strong> ${order.selectedSoup || "-"}</p>
-        <p><strong>ความเผ็ด:</strong> ${order.selectedSpicy || "-"}</p>
-
-        <p>
-          <strong>น้ำจิ้มงา:</strong>
-          ${order.sauces?.sesame ?? 0} ถ้วย
-        </p>
-
-        <p>
-          <strong>น้ำจิ้มสุกี้:</strong>
-          ${order.sauces?.suki ?? 0} ถ้วย
-        </p>
-
-        <p>
-          <strong>ซอสหม่าล่า:</strong>
-          ${order.malaSauceCount ?? 0} ถ้วย
-        </p>
-
-        ${
-          order.customerNote
-            ? `<p><strong>หมายเหตุ:</strong> ${order.customerNote}</p>`
-            : ""
-        }
-
-        <div class="divider"></div>
-
-        <p class="center">
-          ${new Date().toLocaleString("th-TH")}
-        </p>
-
-        <script>
-          window.onload = function () {
-            window.print();
-            window.onafterprint = function () {
-              window.close();
-            };
+          window.onafterprint = function () {
+            window.close();
           };
-        </script>
-      </body>
+        };
+      </script>
     </html>
   `);
 
