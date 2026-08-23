@@ -11,20 +11,36 @@ type CloudinaryUploadResponse = {
   };
 };
 
-export async function uploadMenuImage(file: File): Promise<string> {
-  if (!file.type.startsWith("image/")) {
-    throw new Error("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
+export async function uploadMenuImage(
+  file: File
+): Promise<string> {
+  if (!file) {
+    throw new Error("ไม่พบไฟล์รูปภาพ");
+  }
+
+  if (file.size === 0) {
+    throw new Error("ไฟล์รูปภาพมีขนาด 0 bytes");
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error("รูปมีขนาดใหญ่เกิน 5 MB กรุณาลดขนาดรูปก่อน");
+    throw new Error(
+      `รูปมีขนาด ${(file.size / 1024 / 1024).toFixed(
+        2
+      )} MB ซึ่งใหญ่เกิน 5 MB`
+    );
   }
 
   const formData = new FormData();
 
   formData.append("file", file);
-  formData.append("upload_preset", UPLOAD_PRESET);
-  formData.append("folder", "longtang/menu-images");
+  formData.append(
+    "upload_preset",
+    UPLOAD_PRESET
+  );
+  formData.append(
+    "folder",
+    "longtang/menu-images"
+  );
 
   const controller = new AbortController();
 
@@ -42,17 +58,28 @@ export async function uploadMenuImage(file: File): Promise<string> {
       }
     );
 
-    const data =
-      (await response.json()) as CloudinaryUploadResponse;
+    let data: CloudinaryUploadResponse;
+
+    try {
+      data =
+        (await response.json()) as CloudinaryUploadResponse;
+    } catch {
+      throw new Error(
+        `Cloudinary ตอบกลับผิดปกติ (HTTP ${response.status})`
+      );
+    }
 
     if (!response.ok) {
       throw new Error(
-        data.error?.message || "อัปโหลดรูปไม่สำเร็จ"
+        data.error?.message ||
+          `อัปโหลดรูปไม่สำเร็จ (HTTP ${response.status})`
       );
     }
 
     if (!data.secure_url) {
-      throw new Error("ไม่ได้รับ URL รูปจาก Cloudinary");
+      throw new Error(
+        "อัปโหลดสำเร็จแต่ไม่ได้รับ URL รูปภาพ"
+      );
     }
 
     return data.secure_url;
@@ -62,7 +89,13 @@ export async function uploadMenuImage(file: File): Promise<string> {
       error.name === "AbortError"
     ) {
       throw new Error(
-        "อัปโหลดรูปนานเกิน 60 วินาที กรุณาลดขนาดรูปแล้วลองใหม่"
+        "อัปโหลดรูปนานเกิน 60 วินาที กรุณาลองใหม่หรือลดขนาดรูป"
+      );
+    }
+
+    if (error instanceof TypeError) {
+      throw new Error(
+        `ไม่สามารถเชื่อมต่อกับ Cloudinary ได้: ${error.message}`
       );
     }
 
@@ -73,5 +106,5 @@ export async function uploadMenuImage(file: File): Promise<string> {
 }
 
 export async function deleteMenuImage() {
-  // การลบไฟล์ Cloudinary ต้องทำผ่านระบบฝั่งเซิร์ฟเวอร์ในภายหลัง
+  // การลบรูปจะทำผ่าน Server API ในภายหลัง
 }

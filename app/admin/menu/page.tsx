@@ -92,6 +92,13 @@ function resetForm() {
 
     const trimmedName = name.trim();
     const numericPrice = Number(price);
+    if (
+  imageFile &&
+  imageFile.size > 5 * 1024 * 1024
+) {
+  setMessage("รูปภาพมีขนาดใหญ่เกิน 5 MB กรุณาเลือกรูปใหม่");
+  return;
+}
 
     if (!trimmedName) {
       setMessage("กรุณากรอกชื่อเมนู");
@@ -156,9 +163,14 @@ setMenus(latestMenus);
       resetForm();
       await loadMenus();
     } catch (error) {
-      console.error("บันทึกเมนูไม่สำเร็จ:", error);
-      setMessage("บันทึกเมนูไม่สำเร็จ");
-    } finally {
+  console.error("บันทึกเมนูไม่สำเร็จ:", error);
+
+  if (error instanceof Error) {
+    setMessage(`บันทึกเมนูไม่สำเร็จ: ${error.message}`);
+  } else {
+    setMessage("บันทึกเมนูไม่สำเร็จ");
+  }
+} finally {
       setSaving(false);
     }
   }
