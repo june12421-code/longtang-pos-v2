@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { supabaseAdmin } from "../../../lib/supabaseAdmin";
-
+import { adminClient as supabaseAdmin } from "../../../lib/supabaseAdmin";
 type ShopStatus = "open" | "paused" | "closed";
 
 type UpdateShopSettingsBody = {

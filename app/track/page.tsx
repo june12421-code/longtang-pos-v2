@@ -2,7 +2,13 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { Timestamp } from "firebase/firestore";
+import {
+  Timestamp,
+  collection,
+  onSnapshot,
+} from "firebase/firestore";
+
+import { db } from "../../lib/firebase";
 
 type TrackingOrder = {
   id: string;
@@ -160,53 +166,42 @@ export default function TrackPage() {
   );
   const [loading, setLoading] = useState(true);
   const [searchMessage, setSearchMessage] = useState("");
-async function loadOrders() {
-  try {
-    const response = await fetch("/api/orders", {
-      method: "GET",
-      cache: "no-store",
-    });
+function subscribeOrdersRealtime() {
+  const ordersRef = collection(db, "orders");
 
-    const result = (await response.json()) as {
-      orders?: TrackingOrder[];
-      error?: string;
-    };
+  const unsubscribe = onSnapshot(
+    ordersRef,
+    (snapshot) => {
+      const orderList = snapshot.docs.map((orderDoc) => ({
+        id: orderDoc.id,
+        ...orderDoc.data(),
+      })) as TrackingOrder[];
 
-    if (!response.ok) {
-      throw new Error(
-        result.error || "โหลดสถานะออเดอร์ไม่สำเร็จ"
+      setOrders(orderList);
+      setSearchMessage("");
+      setLoading(false);
+    },
+    (error) => {
+      console.error(
+        "ติดตามออเดอร์จาก Firebase ไม่สำเร็จ:",
+        error
       );
+
+      setSearchMessage(
+        "ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่"
+      );
+      setLoading(false);
     }
+  );
 
-    setOrders(result.orders ?? []);
-    setSearchMessage("");
-  } catch (error) {
-    console.error(
-      "โหลดสถานะออเดอร์จาก Supabase ไม่สำเร็จ:",
-      error
-    );
-
-    setSearchMessage(
-      error instanceof Error
-        ? error.message
-        : "ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่"
-    );
-  } finally {
-    setLoading(false);
-  }
+  return unsubscribe;
 }
-  useEffect(() => {
-  loadOrders();
+  
+useEffect(() => {
+  const unsubscribe = subscribeOrdersRealtime();
 
-  const timer = window.setInterval(() => {
-    loadOrders();
-  }, 5000);
-
-  return () => {
-    window.clearInterval(timer);
-  };
+  return () => unsubscribe();
 }, []);
-
   const todayOrders = useMemo(() => {
     return orders
       .filter((order) => isToday(order.createdAt))

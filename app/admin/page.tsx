@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+
 import { updateOrderStatus } from "../../services/orderService";
 import {
   ShopStatus,
@@ -113,7 +116,53 @@ const thaiSupportSales = todayOrders
       order.paymentMethod === "thai-support"
   )
   .reduce((sum, order) => sum + order.totalPrice, 0);
-async function loadOrders() {
+function subscribeOrdersRealtime() {
+  const ordersRef = collection(db, "orders");
+
+  const unsubscribe = onSnapshot(
+    ordersRef,
+    (snapshot) => {
+      const orderList = snapshot.docs.map((orderDoc) => ({
+        id: orderDoc.id,
+        ...orderDoc.data(),
+      })) as Order[];
+
+      const currentOrderIds = new Set(
+        orderList.map((order) => order.id)
+      );
+
+      if (isFirstLoad.current) {
+        previousOrderIds.current = currentOrderIds;
+        isFirstLoad.current = false;
+      } else {
+        const newOrders = orderList.filter(
+          (order) =>
+            !previousOrderIds.current.has(order.id)
+        );
+
+        if (newOrders.length > 0) {
+          playNotificationSound();
+        }
+
+        previousOrderIds.current = currentOrderIds;
+      }
+
+      setOrders(orderList);
+      setIsLoading(false);
+    },
+    (error) => {
+      console.error(
+        "ติดตามออเดอร์จาก Firebase ไม่สำเร็จ:",
+        error
+      );
+
+      setIsLoading(false);
+    }
+  );
+
+  return unsubscribe;
+}
+  async function loadOrders() {
   try {
     const response = await fetch("/api/orders", {
       method: "GET",
@@ -493,18 +542,12 @@ useEffect(() => {
 
   return () => unsubscribe();
 }, []);
-
 useEffect(() => {
-  loadOrders();
+  const unsubscribe = subscribeOrdersRealtime();
 
-  const timer = window.setInterval(() => {
-    loadOrders();
-  }, 5000);
-
-  return () => {
-    window.clearInterval(timer);
-  };
+  return () => unsubscribe();
 }, []);
+
   useEffect(() => {
   const timer = setInterval(() => {
     forceUpdate((value) => value + 1);

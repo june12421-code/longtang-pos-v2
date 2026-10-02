@@ -4,6 +4,8 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  orderBy,
+  query,
   updateDoc,
 } from "firebase/firestore";
 
@@ -13,27 +15,46 @@ import { MenuItem } from "../types/menu";
 const menuCollection = collection(db, "menus");
 
 export async function getMenus(): Promise<MenuItem[]> {
-  const snapshot = await getDocs(menuCollection);
+  const menuQuery = query(
+    menuCollection,
+    orderBy("sortOrder", "asc")
+  );
 
-  return snapshot.docs.map((docItem) => ({
-    id: docItem.id as any,
-    ...docItem.data(),
-  })) as MenuItem[];
+  const snapshot = await getDocs(menuQuery);
+
+  return snapshot.docs.map((menuDoc) => {
+  const data = menuDoc.data();
+
+  return {
+    ...data,
+    id: menuDoc.id,
+  } as unknown as MenuItem;
+});
 }
 
 export async function addMenu(
   menu: Omit<MenuItem, "id">
-) {
-  await addDoc(menuCollection, menu);
+): Promise<string> {
+  const docRef = await addDoc(menuCollection, menu);
+
+  return docRef.id;
 }
 
 export async function updateMenu(
   id: string,
   data: Partial<MenuItem>
-) {
-  await updateDoc(doc(db, "menus", id), data);
+): Promise<void> {
+  const menuRef = doc(db, "menus", id);
+
+  const { id: _id, ...updateData } = data;
+
+  await updateDoc(menuRef, updateData);
 }
 
-export async function deleteMenu(id: string) {
-  await deleteDoc(doc(db, "menus", id));
+export async function deleteMenu(
+  id: string
+): Promise<void> {
+  const menuRef = doc(db, "menus", id);
+
+  await deleteDoc(menuRef);
 }

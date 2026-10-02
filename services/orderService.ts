@@ -10,12 +10,6 @@ export type CreateOrderInput = {
   customerPhone: string;
   customerLine: string;
 
-  /**
-   * LINE User ID
-   * ใช้ส่งข้อความอัตโนมัติกลับหาลูกค้า
-   */
-  lineUserId?: string;
-
   customerAddress: string;
   customerNote: string;
 
@@ -68,31 +62,7 @@ export async function createOrder(
     );
   }
 
-  const createdOrder = result as CreateOrderResult;
-
-  if (orderData.lineUserId) {
-    try {
-      await fetch("/api/line/push-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          lineUserId: orderData.lineUserId,
-          customerName: orderData.customerName,
-          queueNumber: createdOrder.queueNumber,
-          totalPrice: orderData.totalPrice,
-        }),
-      });
-    } catch (error) {
-      console.error(
-        "ส่งข้อความ LINE ไม่สำเร็จ:",
-        error
-      );
-    }
-  }
-
-  return createdOrder;
+  return result as CreateOrderResult;
 }
 
 export async function updateOrderStatus(
