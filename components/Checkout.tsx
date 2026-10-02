@@ -91,6 +91,16 @@ onConvertToDry,
 const shouldSelectSpicy =
   orderType !== "shabu" ||
   !soupsWithoutSpicy.includes(selectedSoup);
+
+  const cannotChooseNoSpicy =
+  orderType === "dry" ||
+  [
+    "หม่าล่า",
+    "หม่าล่านม",
+    "หม่าล่าน้ำดำ",
+    "ต้มยำ",
+    "แจ่วฮ้อน",
+  ].includes(selectedSoup);
   return (
     <div
       style={{
@@ -195,11 +205,16 @@ const shouldSelectSpicy =
     >
       <option value="">กรุณาเลือกระดับความเผ็ด</option>
 
-      {spicyOptions.map((spicy) => (
-        <option key={spicy} value={spicy}>
-          {spicy}
-        </option>
-      ))}
+      {spicyOptions
+  .filter(
+    (spicy) =>
+      !cannotChooseNoSpicy || spicy !== "ไม่เผ็ด"
+  )
+  .map((spicy) => (
+    <option key={spicy} value={spicy}>
+      {spicy}
+    </option>
+  ))}
     </select>
   </label>
 ) : (
