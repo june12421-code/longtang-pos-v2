@@ -1,13 +1,12 @@
-const CLOUD_NAME = "zncmq8w7";
-const UPLOAD_PRESET = "longtang_menu";
+const UPLOADCARE_PUBLIC_KEY = "a22d311b5b5eacc08997";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const UPLOAD_TIMEOUT = 60_000;
 
-type CloudinaryUploadResponse = {
-  secure_url?: string;
+type UploadcareUploadResponse = {
+  file?: string;
   error?: {
-    message?: string;
+    content?: string;
   };
 };
 
@@ -32,15 +31,9 @@ export async function uploadMenuImage(
 
   const formData = new FormData();
 
+  formData.append("UPLOADCARE_PUB_KEY", UPLOADCARE_PUBLIC_KEY);
+  formData.append("UPLOADCARE_STORE", "1");
   formData.append("file", file);
-  formData.append(
-    "upload_preset",
-    UPLOAD_PRESET
-  );
-  formData.append(
-    "folder",
-    "longtang/menu-images"
-  );
 
   const controller = new AbortController();
 
@@ -50,7 +43,7 @@ export async function uploadMenuImage(
 
   try {
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+      "https://upload.uploadcare.com/base/",
       {
         method: "POST",
         body: formData,
@@ -58,31 +51,31 @@ export async function uploadMenuImage(
       }
     );
 
-    let data: CloudinaryUploadResponse;
+    let data: UploadcareUploadResponse;
 
     try {
       data =
-        (await response.json()) as CloudinaryUploadResponse;
+        (await response.json()) as UploadcareUploadResponse;
     } catch {
       throw new Error(
-        `Cloudinary ตอบกลับผิดปกติ (HTTP ${response.status})`
+        `Uploadcare ตอบกลับผิดปกติ (HTTP ${response.status})`
       );
     }
 
     if (!response.ok) {
       throw new Error(
-        data.error?.message ||
+        data.error?.content ||
           `อัปโหลดรูปไม่สำเร็จ (HTTP ${response.status})`
       );
     }
 
-    if (!data.secure_url) {
+    if (!data.file) {
       throw new Error(
-        "อัปโหลดสำเร็จแต่ไม่ได้รับ URL รูปภาพ"
+        "อัปโหลดสำเร็จแต่ไม่ได้รับรหัสไฟล์"
       );
     }
 
-    return data.secure_url;
+    return `https://ucarecdn.com/${data.file}/`;
   } catch (error) {
     if (
       error instanceof DOMException &&
@@ -95,7 +88,7 @@ export async function uploadMenuImage(
 
     if (error instanceof TypeError) {
       throw new Error(
-        `ไม่สามารถเชื่อมต่อกับ Cloudinary ได้: ${error.message}`
+        `ไม่สามารถเชื่อมต่อกับ Uploadcare ได้: ${error.message}`
       );
     }
 
@@ -106,5 +99,6 @@ export async function uploadMenuImage(
 }
 
 export async function deleteMenuImage() {
-  // การลบรูปจะทำผ่าน Server API ในภายหลัง
+  // ยังไม่ลบไฟล์จาก Uploadcare โดยตรง
+  // เพราะการลบต้องใช้ Secret Key ฝั่ง Server
 }
