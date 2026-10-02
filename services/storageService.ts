@@ -1,5 +1,8 @@
 const UPLOADCARE_PUBLIC_KEY = "a22d311b5b5eacc08997";
 
+const UPLOADCARE_CDN_BASE =
+  "https://5danwq15ld.ucarecd.net";
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const UPLOAD_TIMEOUT = 60_000;
 
@@ -31,7 +34,10 @@ export async function uploadMenuImage(
 
   const formData = new FormData();
 
-  formData.append("UPLOADCARE_PUB_KEY", UPLOADCARE_PUBLIC_KEY);
+  formData.append(
+    "UPLOADCARE_PUB_KEY",
+    UPLOADCARE_PUBLIC_KEY
+  );
   formData.append("UPLOADCARE_STORE", "1");
   formData.append("file", file);
 
@@ -75,7 +81,9 @@ export async function uploadMenuImage(
       );
     }
 
-    return `https://ucarecdn.com/${data.file}/`;
+    const encodedFileName = encodeURIComponent(file.name);
+
+    return `${UPLOADCARE_CDN_BASE}/${data.file}/${encodedFileName}`;
   } catch (error) {
     if (
       error instanceof DOMException &&
