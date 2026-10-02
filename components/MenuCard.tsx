@@ -108,10 +108,9 @@ export default function MenuCard({
                   "0 2px 6px rgba(0, 0, 0, 0.35)",
                 zIndex: 2,
               }}
-            >
-              <div>(ของหมด) ขออภัย</div>
-              <div>เมนูไม่พร้อมขายชั่วคราว</div>
-            </div>
+           >
+  <div>ของหมด</div>
+</div>
           )}
         </div>
 

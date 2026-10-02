@@ -798,10 +798,29 @@ setSauces({
         รับคำสั่งซื้อแล้ว!
       </h2>
 
+      <div
+        style={{
+          background: "#fff4cc",
+          color: "#8a5200",
+          border: "2px solid #ffcc66",
+          borderRadius: "14px",
+          padding: "16px",
+          lineHeight: 1.7,
+          fontWeight: "bold",
+          marginTop: "20px",
+          marginBottom: "20px",
+          fontSize: "17px",
+        }}
+      >
+        ⚠️ กดคัดลอกหมายเลขคิว
+        <br />
+        เพื่อแจ้งยืนยันออเดอร์ทาง LINE
+      </div>
+
       <p
         style={{
           color: "#dddddd",
-          marginTop: "14px",
+          margin: "0 0 8px",
           fontSize: "18px",
         }}
       >
@@ -813,7 +832,7 @@ setSauces({
           fontSize: "54px",
           fontWeight: "bold",
           color: "#ffffff",
-          marginBottom: "18px",
+          marginBottom: "12px",
         }}
       >
         {orderSuccess.queueNumber}
@@ -821,40 +840,28 @@ setSauces({
 
       <div
         style={{
-          background: "#333333",
-          borderRadius: "14px",
-          padding: "14px",
-          marginBottom: "18px",
-        }}
-      >
-        <div style={{ marginBottom: "8px" }}>
-          💰 ยอดรวม {orderSuccess.totalPrice} บาท
-        </div>
-
-        <div>
-          🕒 เวลา {orderSuccess.createdAt}
-        </div>
-      </div>
-
-      <div
-        style={{
-          background: "#fff4cc",
-          color: "#8a5200",
-          border: "2px solid #ffcc66",
-          borderRadius: "14px",
-          padding: "16px",
-          lineHeight: 1.7,
+          fontSize: "20px",
           fontWeight: "bold",
+          color: "#ffffff",
           marginBottom: "24px",
         }}
       >
-        ⚠️ กรุณาแจ้งหมายเลขคิว
-        <br />
-        เพื่อแจ้งยืนยันออเดอร์ทาง LINE อีกครั้ง
+        💰 ยอดรวม {orderSuccess.totalPrice} บาท
       </div>
 
       <button
-        onClick={() => setOrderSuccess(null)}
+        type="button"
+        onClick={async () => {
+          const textToCopy =
+            `${orderSuccess.queueNumber} ยอดรวม ${orderSuccess.totalPrice} บาท`;
+
+          try {
+            await navigator.clipboard.writeText(textToCopy);
+            setOrderSuccess(null);
+          } catch {
+            alert("คัดลอกไม่สำเร็จ กรุณาลองใหม่");
+          }
+        }}
         style={{
           width: "100%",
           padding: "18px",
@@ -867,7 +874,7 @@ setSauces({
           cursor: "pointer",
         }}
       >
-        ตกลง
+        📋 คัดลอก
       </button>
     </div>
   </div>
