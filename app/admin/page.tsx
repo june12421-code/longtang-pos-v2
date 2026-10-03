@@ -122,10 +122,18 @@ function subscribeOrdersRealtime() {
   const unsubscribe = onSnapshot(
     ordersRef,
     (snapshot) => {
-      const orderList = snapshot.docs.map((orderDoc) => ({
-        id: orderDoc.id,
-        ...orderDoc.data(),
-      })) as Order[];
+      const orderList = snapshot.docs
+  .map((orderDoc) => ({
+    id: orderDoc.id,
+    ...orderDoc.data(),
+  })) as Order[];
+
+orderList.sort((a, b) => {
+  const timeA = new Date(a.createdAt ?? 0).getTime();
+  const timeB = new Date(b.createdAt ?? 0).getTime();
+
+  return timeB - timeA;
+});
 
       const currentOrderIds = new Set(
         orderList.map((order) => order.id)
@@ -978,6 +986,12 @@ useEffect(() => {
 
     return matchSearch && matchStatus;
   })
+  .sort((a, b) => {
+  const timeA = new Date(a.createdAt ?? 0).getTime();
+  const timeB = new Date(b.createdAt ?? 0).getTime();
+
+  return timeB - timeA;
+})
   .map((order) => (          
               <article
                 key={order.id}

@@ -7,12 +7,14 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   orderBy,
   query,
   setDoc,
   updateDoc,
   where,
+  runTransaction,
 } from "firebase/firestore";
 
 import { db } from "../../../lib/firebase";
@@ -87,54 +89,100 @@ function getThailandDateRange() {
 }
 
 async function createNextQueueNumber() {
-  const { startOfDay, endOfDay } =
-    getThailandDateRange();
+  const { startOfDay, endOfDay } = getThailandDateRange();
 
-  const ordersRef = collection(db, "orders");
+  const dateKey = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 
-  const snapshot = await getDocs(
-    query(
-      ordersRef,
-      where(
-        "createdAt",
-        ">=",
-        startOfDay
-      ),
-      where(
-        "createdAt",
-        "<=",
-        endOfDay
-      )
-    )
-  );
+  const counterRef = doc(db, "queueCounters", dateKey);
 
-  let largestQueueNumber = 0;
+  // ถ้าวันนี้ยังไม่มี counter
+  // หาเลขคิวสูงสุดจาก orders ของวันนี้ก่อน 1 ครั้ง
+  const counterSnapshot = await getDoc(counterRef);
 
-  snapshot.forEach((orderDoc) => {
-    const data = orderDoc.data();
+  if (!counterSnapshot.exists()) {
+    const ordersRef = collection(db, "orders");
 
-    const numericQueue = Number(
-      String(data.queueNumber ?? "").replace(
-        /^A/,
-        ""
+    const todaySnapshot = await getDocs(
+      query(
+        ordersRef,
+        where("createdAt", ">=", startOfDay),
+        where("createdAt", "<=", endOfDay)
       )
     );
 
-    if (
-      !Number.isNaN(numericQueue) &&
-      numericQueue > largestQueueNumber
-    ) {
-      largestQueueNumber = numericQueue;
+    let largestQueueNumber = 0;
+
+    todaySnapshot.forEach((orderDoc) => {
+      const data = orderDoc.data();
+
+      const numericQueue = Number(
+        String(data.queueNumber ?? "").replace(/\D/g, "")
+      );
+
+      if (
+        !Number.isNaN(numericQueue) &&
+        numericQueue > largestQueueNumber
+      ) {
+        largestQueueNumber = numericQueue;
+      }
+    });
+
+    // สร้างค่าเริ่มต้นเท่านั้น
+    // Transaction ด้านล่างจะเป็นผู้แจกเลขจริง
+    try {
+      await setDoc(
+        counterRef,
+        {
+          currentNumber: largestQueueNumber,
+          lastNumber: largestQueueNumber,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("สร้าง queue counter เริ่มต้นไม่สำเร็จ:", error);
     }
+  }
+
+  // เลขคิวจริงต้องถูกแจกใน Transaction เท่านั้น
+  const nextNumber = await runTransaction(db, async (transaction) => {
+    const latestCounterSnapshot =
+      await transaction.get(counterRef);
+
+    let currentNumber = 0;
+
+    if (latestCounterSnapshot.exists()) {
+      const data = latestCounterSnapshot.data();
+
+      currentNumber =
+        typeof data.currentNumber === "number"
+          ? data.currentNumber
+          : typeof data.lastNumber === "number"
+            ? data.lastNumber
+            : 0;
+    }
+
+    const newNumber = currentNumber + 1;
+
+    transaction.set(
+      counterRef,
+      {
+        currentNumber: newNumber,
+        lastNumber: newNumber,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+
+    return newNumber;
   });
 
-  const nextNumber =
-    largestQueueNumber + 1;
-
-  return `A${String(nextNumber).padStart(
-    3,
-    "0"
-  )}`;
+  return `A${String(nextNumber).padStart(3, "0")}`;
 }
 
 function mapOrderDoc(
