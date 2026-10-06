@@ -6,6 +6,8 @@ import {
   Timestamp,
   collection,
   onSnapshot,
+  query,
+  where,
 } from "firebase/firestore";
 
 import { db } from "../../lib/firebase";
@@ -168,9 +170,30 @@ export default function TrackPage() {
   const [searchMessage, setSearchMessage] = useState("");
 function subscribeOrdersRealtime() {
   const ordersRef = collection(db, "orders");
+const now = new Date();
 
+const thailandDate = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Bangkok",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).format(now);
+
+const startOfDay = new Date(
+  `${thailandDate}T00:00:00+07:00`
+).toISOString();
+
+const endOfDay = new Date(
+  `${thailandDate}T23:59:59.999+07:00`
+).toISOString();
+
+const todayOrdersQuery = query(
+  ordersRef,
+  where("createdAt", ">=", startOfDay),
+  where("createdAt", "<=", endOfDay)
+);
   const unsubscribe = onSnapshot(
-    ordersRef,
+    todayOrdersQuery,
     (snapshot) => {
       const orderList = snapshot.docs.map((orderDoc) => ({
         id: orderDoc.id,

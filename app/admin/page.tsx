@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { collection, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
 import { updateOrderStatus } from "../../services/orderService";
@@ -71,10 +76,6 @@ const preparingCount = orders.filter(
   (order) => order.status === "preparing"
 ).length;
 
-const readyCount = orders.filter(
-  (order) => order.status === "ready"
-).length;
-
 const completedCount = orders.filter(
   (order) => order.status === "completed"
 ).length;
@@ -118,9 +119,30 @@ const thaiSupportSales = todayOrders
   .reduce((sum, order) => sum + order.totalPrice, 0);
 function subscribeOrdersRealtime() {
   const ordersRef = collection(db, "orders");
+const now = new Date();
 
+const thailandDate = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Bangkok",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).format(now);
+
+const startOfDay = new Date(
+  `${thailandDate}T00:00:00+07:00`
+).toISOString();
+
+const endOfDay = new Date(
+  `${thailandDate}T23:59:59.999+07:00`
+).toISOString();
+
+const todayOrdersQuery = query(
+  ordersRef,
+  where("createdAt", ">=", startOfDay),
+  where("createdAt", "<=", endOfDay)
+);
   const unsubscribe = onSnapshot(
-    ordersRef,
+    todayOrdersQuery,
     (snapshot) => {
       const orderList = snapshot.docs
   .map((orderDoc) => ({
@@ -243,7 +265,7 @@ async function handleChangeOrderStatus(
 }
   async function handleDeleteCompletedOrders() {
   if (completedCount === 0) {
-    alert("ไม่มีออเดอร์ที่เสร็จแล้วให้ลบ");
+    alert("ไม่มีออเดอร์ที่ส่งแล้วให้ลบ");
     return;
   }
 
@@ -775,18 +797,10 @@ useEffect(() => {
 
     <button
       type="button"
-      onClick={() => setStatusFilter("ready")}
-      style={copyButtonStyle}
-    >
-      🛵 พร้อมส่ง
-    </button>
-
-    <button
-      type="button"
       onClick={() => setStatusFilter("completed")}
       style={copyButtonStyle}
     >
-      ✅ เสร็จแล้ว
+      ✅ ส่งแล้ว
     </button>
     <button
   type="button"
@@ -821,7 +835,7 @@ useEffect(() => {
 >
   {isDeletingCompleted
     ? "⏳ กำลังลบ..."
-    : `🗑️ ล้างออเดอร์เสร็จแล้ว (${completedCount})`}
+    : `🗑 ล้างออเดอร์ส่งแล้ว (${completedCount})`}
 </button>
   </div>
 </header>
@@ -863,21 +877,7 @@ useEffect(() => {
     <div>👨‍🍳 กำลังทำ</div>
   </div>
 
-  <div
-    style={{
-      background: "#16a34a",
-      borderRadius: "12px",
-      padding: "16px",
-      color: "#fff",
-      textAlign: "center",
-    }}
-  >
-    <div style={{ fontSize: "28px", fontWeight: "bold" }}>
-      {readyCount}
-    </div>
-    <div>🛵 พร้อมส่ง</div>
-  </div>
-
+  
   <div
     style={{
       background: "#6b7280",
@@ -890,7 +890,7 @@ useEffect(() => {
     <div style={{ fontSize: "28px", fontWeight: "bold" }}>
       {completedCount}
     </div>
-    <div>✅ เสร็จแล้ว</div>
+    <div>✅ ส่งแล้ว</div>
   </div>
   <div
   style={{
@@ -1171,14 +1171,12 @@ useEffect(() => {
     }}
   >
     {order.status === "new"
-      ? "🆕 ออเดอร์ใหม่"
-      : order.status === "preparing"
-      ? "👨‍🍳 กำลังทำ"
-      : order.status === "ready"
-      ? "🛵 พร้อมส่ง"
-      : order.status === "completed"
-      ? "✅ เสร็จแล้ว"
-      : order.status}
+  ? "🆕 ออเดอร์ใหม่"
+  : order.status === "preparing"
+  ? "👨‍🍳 กำลังทำ"
+  : order.status === "completed"
+  ? "✅ ส่งแล้ว"
+  : order.status}
   </span>
 </div>
                     <div
@@ -1190,41 +1188,43 @@ useEffect(() => {
     justifyContent: "flex-end",
   }}
 >
+  {order.status === "new" && (
   <button
-  onClick={() =>
-    handleChangeOrderStatus(
-      order.id,
-      "preparing"
-    )
-  }
-  style={statusButtonStyle}
->
-  กำลังทำ
-</button>
+    onClick={async () => {
+      await handleChangeOrderStatus(
+        order.id,
+        "preparing"
+      );
+      printOrder(order);
+    }}
+    style={statusButtonStyle}
+  >
+    กำลังทำ + พิมพ์
+  </button>
+)}
 
-  <button
-  onClick={() =>
-    handleChangeOrderStatus(
-      order.id,
-      "ready"
-    )
-  }
-  style={statusButtonStyle}
->
-  พร้อมส่ง
-</button>
+  {order.status === "preparing" && (
+  <>
+    <button
+      onClick={() => printOrder(order)}
+      style={statusButtonStyle}
+    >
+      พิมพ์ซ้ำ
+    </button>
 
-  <button
-  onClick={() =>
-    handleChangeOrderStatus(
-      order.id,
-      "completed"
-    )
-  }
-  style={statusButtonStyle}
->
-  เสร็จแล้ว
-</button>
+    <button
+      onClick={() =>
+        handleChangeOrderStatus(
+          order.id,
+          "completed"
+        )
+      }
+      style={statusButtonStyle}
+    >
+      ส่งแล้ว
+    </button>
+  </>
+)}
   <button
   onClick={() => printOrder(order)}
   style={statusButtonStyle}
@@ -1322,12 +1322,6 @@ const copyButtonStyle = {
     case "preparing":
       return {
         background: "#f59e0b",
-        color: "#fff",
-      };
-
-    case "ready":
-      return {
-        background: "#16a34a",
         color: "#fff",
       };
 

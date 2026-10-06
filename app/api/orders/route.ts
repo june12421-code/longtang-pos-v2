@@ -9,6 +9,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
   setDoc,
@@ -298,12 +299,12 @@ export async function GET() {
     const snapshot = await getDocs(
       query(
         ordersRef,
-        orderBy("createdAt", "desc")
+        orderBy("createdAt", "desc"),
+    limit(300)
       )
     );
 
     const orders = snapshot.docs
-      .slice(0, 300)
       .map((orderDoc) =>
         mapOrderDoc(
           orderDoc.id,
