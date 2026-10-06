@@ -192,56 +192,7 @@ orderList.sort((a, b) => {
 
   return unsubscribe;
 }
-  async function loadOrders() {
-  try {
-    const response = await fetch("/api/orders", {
-      method: "GET",
-      cache: "no-store",
-    });
 
-    const result = (await response.json()) as {
-      orders?: Order[];
-      error?: string;
-    };
-
-    if (!response.ok) {
-      throw new Error(
-        result.error || "อ่านออเดอร์ไม่สำเร็จ"
-      );
-    }
-
-    const orderList = result.orders ?? [];
-
-    const currentOrderIds = new Set(
-      orderList.map((order) => order.id)
-    );
-
-    if (isFirstLoad.current) {
-      previousOrderIds.current = currentOrderIds;
-      isFirstLoad.current = false;
-    } else {
-      const newOrders = orderList.filter(
-        (order) =>
-          !previousOrderIds.current.has(order.id)
-      );
-
-      if (newOrders.length > 0) {
-        playNotificationSound();
-      }
-
-      previousOrderIds.current = currentOrderIds;
-    }
-
-    setOrders(orderList);
-  } catch (error) {
-    console.error(
-      "อ่านออเดอร์จาก Supabase ไม่สำเร็จ:",
-      error
-    );
-  } finally {
-    setIsLoading(false);
-  }
-}
 async function handleChangeOrderStatus(
   orderId: string,
   status: string
@@ -249,7 +200,6 @@ async function handleChangeOrderStatus(
   try {
     await updateOrderStatus(orderId, status);
 
-    await loadOrders();
   } catch (error) {
     console.error(
       "เปลี่ยนสถานะออเดอร์ไม่สำเร็จ:",
@@ -303,7 +253,6 @@ async function handleChangeOrderStatus(
 
     setStatusFilter("all");
 
-    await loadOrders();
   } catch (error) {
     console.error(
       "ลบออเดอร์ที่เสร็จแล้วไม่สำเร็จ:",
