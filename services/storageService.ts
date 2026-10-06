@@ -1,16 +1,10 @@
-const UPLOADCARE_PUBLIC_KEY = "a22d311b5b5eacc08997";
-
-const UPLOADCARE_CDN_BASE =
-  "https://5danwq15ld.ucarecd.net";
-
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const UPLOAD_TIMEOUT = 60_000;
 
-type UploadcareUploadResponse = {
-  file?: string;
-  error?: {
-    content?: string;
-  };
+type UploadResponse = {
+  success?: boolean;
+  url?: string;
+  error?: string;
 };
 
 export async function uploadMenuImage(
@@ -33,12 +27,6 @@ export async function uploadMenuImage(
   }
 
   const formData = new FormData();
-
-  formData.append(
-    "UPLOADCARE_PUB_KEY",
-    UPLOADCARE_PUBLIC_KEY
-  );
-  formData.append("UPLOADCARE_STORE", "1");
   formData.append("file", file);
 
   const controller = new AbortController();
@@ -49,7 +37,7 @@ export async function uploadMenuImage(
 
   try {
     const response = await fetch(
-      "https://upload.uploadcare.com/base/",
+      "/api/menu-image",
       {
         method: "POST",
         body: formData,
@@ -57,33 +45,31 @@ export async function uploadMenuImage(
       }
     );
 
-    let data: UploadcareUploadResponse;
+    let data: UploadResponse;
 
     try {
       data =
-        (await response.json()) as UploadcareUploadResponse;
+        (await response.json()) as UploadResponse;
     } catch {
       throw new Error(
-        `Uploadcare ตอบกลับผิดปกติ (HTTP ${response.status})`
+        `ระบบอัปโหลดรูปตอบกลับผิดปกติ (HTTP ${response.status})`
       );
     }
 
     if (!response.ok) {
       throw new Error(
-        data.error?.content ||
+        data.error ||
           `อัปโหลดรูปไม่สำเร็จ (HTTP ${response.status})`
       );
     }
 
-    if (!data.file) {
+    if (!data.url) {
       throw new Error(
-        "อัปโหลดสำเร็จแต่ไม่ได้รับรหัสไฟล์"
+        "อัปโหลดสำเร็จแต่ไม่ได้รับ URL รูปภาพ"
       );
     }
 
-    const encodedFileName = encodeURIComponent(file.name);
-
-    return `${UPLOADCARE_CDN_BASE}/${data.file}/${encodedFileName}`;
+    return data.url;
   } catch (error) {
     if (
       error instanceof DOMException &&
@@ -96,7 +82,7 @@ export async function uploadMenuImage(
 
     if (error instanceof TypeError) {
       throw new Error(
-        `ไม่สามารถเชื่อมต่อกับ Uploadcare ได้: ${error.message}`
+        `ไม่สามารถเชื่อมต่อระบบอัปโหลดรูปได้: ${error.message}`
       );
     }
 
@@ -107,6 +93,5 @@ export async function uploadMenuImage(
 }
 
 export async function deleteMenuImage() {
-  // ยังไม่ลบไฟล์จาก Uploadcare โดยตรง
-  // เพราะการลบต้องใช้ Secret Key ฝั่ง Server
+  // ยังไม่ลบไฟล์จาก Supabase Storage อัตโนมัติ
 }
