@@ -23,12 +23,7 @@ type TrackingOrder = {
   createdAt: Timestamp | string | null;
 };
 
-const statusOrder = [
-  "new",
-  "preparing",
-  "ready",
-  "completed",
-];
+
 
 function normalizeText(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, "");
@@ -245,31 +240,6 @@ useEffect(() => {
     );
   }, [selectedOrderId, todayOrders]);
 
-  const queueBeforeCount = useMemo(() => {
-    if (!selectedOrder) {
-      return 0;
-    }
-
-    if (selectedOrder.status === "completed") {
-      return 0;
-    }
-
-    const selectedQueueValue = getQueueNumberValue(
-      selectedOrder.queueNumber
-    );
-
-    return todayOrders.filter((order) => {
-      const orderQueueValue = getQueueNumberValue(order.queueNumber);
-
-      return (
-        orderQueueValue < selectedQueueValue &&
-        order.status !== "completed"
-      );
-    }).length;
-  }, [selectedOrder, todayOrders]);
-
-  const estimatedMinutes = queueBeforeCount * 4;
-
   const visibleQueueOrders = useMemo(() => {
     return [...todayOrders]
       .sort(
@@ -319,9 +289,7 @@ useEffect(() => {
     setSelectedOrderId(foundOrder.id);
   }
 
-  const currentStatusIndex = selectedOrder
-    ? Math.max(statusOrder.indexOf(selectedOrder.status), 0)
-    : 0;
+
 
   return (
     <main
@@ -544,187 +512,6 @@ caretColor: "#111111",
 </p>
 </div>
 
-{selectedOrder.status !== "completed" && (
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "10px",
-      marginBottom: "22px",
-    }}
-  >
-    <div
-      className="queue-summary-box"
-      style={{
-        backgroundColor: "#FFF7D6",
-        border: "2px solid #FFB347",
-        borderRadius: "18px",
-        padding: "18px 12px",
-        textAlign: "center",
-      }}
-    >
-      <p
-        style={{
-          margin: 0,
-          color: "#E46A00",
-          fontSize: "14px",
-        }}
-      >
-        จำนวนคิวก่อนหน้า
-      </p>
-
-      <strong
-        style={{
-          display: "block",
-          fontSize: "30px",
-          marginTop: "5px",
-          color: "#FF6600",
-        }}
-      >
-        {queueBeforeCount}
-      </strong>
-
-      <span
-        style={{
-          color: "#E46A00",
-        }}
-      >
-        คิว
-      </span>
-    </div>
-
-    <div
-      className="queue-summary-box"
-      style={{
-        backgroundColor: "#FFF7D6",
-        border: "2px solid #FFB347",
-        borderRadius: "18px",
-        padding: "18px 12px",
-        textAlign: "center",
-      }}
-    >
-      <p
-        style={{
-          margin: 0,
-          color: "#E46A00",
-          fontSize: "14px",
-        }}
-      >
-        เวลารอโดยประมาณ
-      </p>
-
-      <strong
-        style={{
-          display: "block",
-          fontSize: "30px",
-          marginTop: "5px",
-          color: "#FF6600",
-        }}
-      >
-        {estimatedMinutes}
-      </strong>
-
-      <span
-        style={{
-          color: "#E46A00",
-        }}
-      >
-        นาที
-      </span>
-    </div>
-  </div>
-)}
-<h3
-              style={{
-                fontSize: "20px",
-                marginBottom: "16px",
-              }}
-            >
-              ความคืบหน้าของออเดอร์
-            </h3>
-
-            {statusOrder.map((status, index) => {
-              const isPassed = index <= currentStatusIndex;
-              const isCurrent = index === currentStatusIndex;
-
-              return (
-                <div
-                  key={status}
-                  style={{
-                    display: "flex",
-                    gap: "12px",
-                    minHeight: "66px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      width: "30px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "29px",
-                        height: "29px",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: isPassed
-                          ? "#ff6600"
-                          : "#dddddd",
-                        color: "#ffffff",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {isPassed ? "✓" : index + 1}
-                    </div>
-
-                    {index < statusOrder.length - 1 && (
-                      <div
-                        style={{
-                          width: "3px",
-                          flex: 1,
-                          backgroundColor:
-                            index < currentStatusIndex
-                              ? "#ff6600"
-                              : "#dddddd",
-                        }}
-                      />
-                    )}
-                  </div>
-
-                  <div>
-                    <strong
-                      style={{
-                        color: isPassed
-                          ? "#222222"
-                          : "#999999",
-                        fontSize: "17px",
-                      }}
-                    >
-                      {getStatusText(status)}
-                      {isCurrent ? " • ตอนนี้" : ""}
-                    </strong>
-                  </div>
-                </div>
-              );
-            })}
-
-            <p
-              style={{
-                borderTop: "1px solid #eeeeee",
-                paddingTop: "14px",
-                margin: "4px 0 0",
-                textAlign: "center",
-                color: "#777777",
-                fontSize: "14px",
-              }}
-            >
-              สถานะจะอัปเดตอัตโนมัติ ไม่ต้องกดรีเฟรช
-            </p>
           </section>
         )}
 
