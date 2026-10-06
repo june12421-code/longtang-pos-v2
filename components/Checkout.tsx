@@ -4,6 +4,7 @@ import {
   spicyOptions,
 } from "../data/options";
 type CheckoutProps = {
+  isSubmitting: boolean;
   customerName: string;
   customerPhone: string;
   customerLine: string;
@@ -49,6 +50,7 @@ onConvertToDry: () => void;
 };
 
 export default function Checkout({
+  isSubmitting,
   customerName,
   customerPhone,
   customerLine,
@@ -594,6 +596,7 @@ const shouldSelectSpicy =
         <button
   type="button"
   disabled={
+  isSubmitting ||
   hasIncompatibleItems ||
   (
     selectableSauceCount > 0 &&
@@ -636,7 +639,9 @@ const shouldSelectSpicy =
         : "pointer",
   }}
 >
-{hasIncompatibleItems
+{isSubmitting
+  ? "⏳ กำลังส่งออเดอร์..."
+  : hasIncompatibleItems
   ? "⛔ มีเมนูที่ไม่รองรับประเภทอาหาร"
   : selectableSauceCount > 0 &&
     sauces.sesame + sauces.suki < selectableSauceCount

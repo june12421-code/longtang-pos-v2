@@ -32,7 +32,7 @@ const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 const [customerName, setCustomerName] = useState("");
 const [customerPhone, setCustomerPhone] = useState("");
 const [customerLine, setCustomerLine] = useState("");
-
+const [isSubmitting, setIsSubmitting] = useState(false);
 useEffect(() => {
   const savedName = localStorage.getItem(
     "lt_customer_name"
@@ -518,6 +518,7 @@ return (
 )}
 {isCheckoutOpen && (
   <Checkout
+  isSubmitting={isSubmitting}
     customerName={customerName}
     customerPhone={customerPhone}
     customerLine={customerLine}
@@ -694,6 +695,11 @@ if (totalPrice < minimumPrice) {
   );
   return;
 }
+if (isSubmitting) {
+  return;
+}
+
+setIsSubmitting(true);
 const orderResult = await createOrder({
   customerName,
   customerPhone,
@@ -749,9 +755,11 @@ setSauces({
   suki: 0,
 });
   } catch (error) {
-    console.error(error);
-    alert("บันทึกออเดอร์ไม่สำเร็จ กรุณาลองใหม่");
-  }
+  console.error(error);
+  alert("บันทึกออเดอร์ไม่สำเร็จ กรุณาลองใหม่");
+} finally {
+  setIsSubmitting(false);
+}
 }}
   />
 )}
@@ -795,7 +803,7 @@ setSauces({
           margin: 0,
         }}
       >
-        รับคำสั่งซื้อแล้ว!
+        !คำสั่งซื้อยังไม่สมบูรณ์!
       </h2>
 
       <div
