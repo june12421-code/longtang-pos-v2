@@ -73,6 +73,7 @@ const [orderSuccess, setOrderSuccess] = useState<{
   queueNumber: string;
   totalPrice: number;
   createdAt: string;
+  customerAddress: string;
 } | null>(null);
 const [shopStatus, setShopStatus] =
   useState<ShopStatus>("open");
@@ -717,14 +718,17 @@ const orderResult = await createOrder({
   totalPrice,
 });
 
- setOrderSuccess({
+ 
+setOrderSuccess({
   queueNumber: orderResult.queueNumber,
   totalPrice,
+  customerAddress,
   createdAt: new Date().toLocaleTimeString("th-TH", {
     hour: "2-digit",
     minute: "2-digit",
   }),
 });
+
 localStorage.setItem(
   "lt_customer_name",
   customerName
@@ -820,9 +824,9 @@ setSauces({
           fontSize: "17px",
         }}
       >
-        ⚠️ กดคัดลอกหมายเลขคิว
+        ⚠️ กด'คัดลอก'
         <br />
-        เพื่อแจ้งยืนยันออเดอร์ทาง LINE
+        แล้ววางหมายเลขคิวในช่องแชท LINE เพื่อแจ้งยืนยันออเดอร์ให้สมบูรณ์
       </div>
 
       <p
@@ -861,7 +865,9 @@ setSauces({
         type="button"
         onClick={async () => {
           const textToCopy =
-            `${orderSuccess.queueNumber} ยอดรวม ${orderSuccess.totalPrice} บาท`;
+  `หมายเลขคิว ${orderSuccess.queueNumber}\n` +
+  `ยอดรวม ${orderSuccess.totalPrice} บาท\n` +
+  `ที่อยู่ ${orderSuccess.customerAddress}`;
 
           try {
             await navigator.clipboard.writeText(textToCopy);
